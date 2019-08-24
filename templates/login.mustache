@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<!--
+
+form2latex - Login Page
+
+MIT License
+
+Copyright (c) 2019 Peter Schüller
+
+-->
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>{{site_title}} - Login</title>
+  <style>
+    {{{commoncss}}}
+  </style>
+  <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.5/jquery.min.js"></script>
+  <script>
+    {{{commonjs}}}
+  </script>
+</head>
+<body>
+  <h1>Login</h1>
+  <form action="{{{prefix}}}/login">
+  Username:<br>
+  <input type="text" name="user"><br>
+  Password:<br>
+  <input type="password" name="password"><br>
+  <input type="submit" value="Login">
+  </form>
+</body>
+</html>         

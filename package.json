@@ -1,0 +1,26 @@
+{
+  "name": "form2latex",
+  "version": "1.0.0",
+  "description": "Form2Latex Service",
+  "main": "server.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com:peschue/form2latex"
+  },
+  "author": "Peter Schüller",
+  "license": "MIT",
+  "dependencies": {
+    "axios": "^0.19.0",
+    "express": "^4.17.1",
+    "express-basic-auth": "^1.2.0",
+    "express-session": "^1.16.2",
+    "lowdb": "^1.0.0",
+    "multer": "^1.4.2",
+    "mustache": "^3.0.1",
+    "tmp": "^0.1.0",
+    "underscore": "^1.9.1"
+  }
+}

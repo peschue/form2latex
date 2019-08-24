@@ -1,0 +1,14 @@
+p.header {
+  font-weight:bold;
+  border-top:solid;
+}
+
+input.more {
+  background-color:green;
+  color:white;
+  font-weight:bold;
+}
+
+textarea {
+  background-color:#eee;
+}

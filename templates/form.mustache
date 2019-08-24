@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<!--
+
+form2latex - Form Editing Page
+
+MIT License
+
+Copyright (c) 2019 Peter Schüller
+
+-->
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>{{site_title}} - Form Entry</title>
+  <style>
+    {{{commoncss}}}
+
+		.hidden, .template {
+			display: none;
+		}
+  </style>
+  <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.5/jquery.min.js"></script>
+  <script>
+    {{{commonjs}}}
+
+    function install() {
+
+			// on click to .more, get fieldname from attribute and clone corresponding template after container of element with button
+			$(".more").click(function() {
+				let name = $(this).attr('fieldname');
+				let template = $("#template-"+name).find('.tocopy');
+				$(this).closest('.onevaluecontainer').after(template.clone(true));
+			});
+
+		}
+
+    $(document).ready(install);
+  </script>
+</head>
+<body>
+  <h1>Filling Form of Type {{formtype}}</h1>
+
+	<div class='hidden'>
+  {{#blocks}}
+	{{{template}}}
+  {{/blocks}}
+	</div>
+
+  <form action="{{{prefix}}}/assemble" method="post" enctype="multipart/form-data">
+  <p><b>Key:</b> <input type="text" name="formkey" value="{{formkey}}"/></p>
+  <input type="hidden" name="originalformkey" value="{{formkey}}"/>
+  <input type="hidden" name="formtype" value="{{formtype}}"/>
+  {{#blocks}}
+	<p class="header">{{name}}</p>
+	{{{control}}}
+  {{/blocks}}
+  <p><input type="submit" name="submit" value="Save &amp; Generate PDF"></p>
+  </form>
+
+  <br/>
+
+  <p><a href="{{{prefix}}}/">Back to Form Selection</a> (do not save)</p>
+
+  <p><a href="{{{prefix}}}/logout">Logout</a></p>
+</body>
+</html>         
