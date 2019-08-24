@@ -23,25 +23,29 @@ for form content:
 
 * Non-repeatable TEXT blocks can be rendered by
 
-  <% & <BLOCKNAME> %>
+  `<% & <BLOCKNAME> %>`
   
 * Non-repeatable TABLEROW blocks can be rendered by
 
-  <% & <BLOCKNAME> %> \\
+  `<% & <BLOCKNAME> %> \\`
 
 * Repeatable TABLEROW blocks can be rendered by
 
+  ```
   <% #<BLOCKNAME> %>
   <% & TEXT %> \\
   <% /<BLOCKNAME> %>
+  ```
 
 * Non-repeatable IMAGE blocks can be rendered by
 
-  \includegraphics[height=17cm,width=24cm,keepaspectratio]{<% & <BLOCKNAME> %>}
+  `\includegraphics[height=17cm,width=24cm,keepaspectratio]{<% & <BLOCKNAME> %>}`
 
 * Repeatable IMAGE blocks can be rendered by
 
+  ```
   <% #<BLOCKNAME> %>
   \includegraphics[height=17cm,width=24cm,keepaspectratio]{<% & PATH %>}
   <% /<BLOCKNAME> %>
+  ```
 
