@@ -1,0 +1,33 @@
+\documentclass[a4paper,landscape]{article}
+
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{graphicx}
+
+
+\begin{document}
+
+\section{Test Text}
+
+<% & TESTTITLE %>
+
+\section{Test Table}
+
+
+\begin{tabular}{|l|l|}
+\hline
+<% #TESTTABLEROW %>
+<% & TEXT %> \\
+\hline
+<% /TESTTABLEROW %>
+\end{tabular}
+
+\section{Test Images}
+
+<% #TESTIMAGE %>
+\begin{center}
+\includegraphics[height=17cm,width=24cm,keepaspectratio]{<% & PATH %>}
+\end{center}
+<% /TESTIMAGE %>
+
+\end{document}
