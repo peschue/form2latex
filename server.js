@@ -513,8 +513,7 @@ low(lowdb_adapter)
   app.post(config.prefix+'/assemble', auth, upload.fields(multer_fields), assemble(db));
 
   return db.defaults({
-      'filledforms': [
-      ],
+      'filledforms': {},
     })
     .write()
 })
