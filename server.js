@@ -234,9 +234,10 @@ const augment_block = (formcontent) => { return (block) => {
         render_add_image(block) +
         '</table>';
     } else {
-			block.template = '';
-      // TODO render_single_image
-      block.control = `<input name="${block.name}" type="file">`;
+      // TODO render single image upload
+      console.error("not implemented: nonrepeated IMAGE")
+			//block.template = '';
+      //block.control = `<input name="${block.name}" type="file">`;
     }
     break;
   default:
