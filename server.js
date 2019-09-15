@@ -150,21 +150,44 @@ const render_template_tablerow = (block) => `
 		${render_tablerow_general(block, 'tocopy onevaluecontainer', '')}
 	</table>
 `;
-const render_tablerow = (block, value) => render_tablerow_general(block, 'onevaluecontainer', value);
+const render_existing_tablerow = (block, value) => render_tablerow_general(block, 'onevaluecontainer', value);
 
 // image
-const render_image_general = (block, trclass, value) => `
-  <tr class='${trclass}'>
-    <td><input name="${block.name}" type="file" value="${value}" /></td>
-		<td><input class="more" fieldname="${block.name}" type="button" value="+" /></td>
+const render_add_image = (block) => `
+  <tr class="onevaluecontainer">
+    <td>
+      <input class="more" fieldname="${block.name}" type="button" value="+" />
+    </td>
   </tr>
 `;
+const render_existing_image = (block, value) => `
+  <tr class="onevaluecontainer">
+    <td>
+      <input type="hidden" name="${block.name}" value="existing_file" />
+      <input type="hidden" name="${block.name}_HASH" value="${value.hash}" />
+      <input type="hidden" name="${block.name}_FILENAME" value="${value.filename}" />
+      <input type="hidden" name="${block.name}_MIMETYPE" value="${value.mimetype}" />
+      File "${value.filename}"
+    </td>
+    <td>
+      <input class="delete" type="button" value="-" />
+    </td>
+  </tr>
+  `;
 const render_template_image = (block) => `
 	<table class="template" id="template-${block.name}">
-		${render_image_general(block, 'tocopy onevaluecontainer', '')}
+    <tr class="tocopy onevaluecontainer">
+      <td>
+        <input type="hidden" name="${block.name}" value="new_file" />
+        <input type="file" name="${block.name}_FILE" />
+      </td>
+      <td>
+        <input class="delete" type="button" value="-" />
+        <input class="more" fieldname="${block.name}" type="button" value="+" />
+      </td>
+    </tr>
 	</table>
 `;
-const render_image = (block, value) => render_image_general(block, 'onevaluecontainer', value);
 
 const augment_block = (formcontent) => { return (block) => {
   // deep copy
@@ -173,10 +196,11 @@ const augment_block = (formcontent) => { return (block) => {
   if (_.has(formcontent.blocks, block.name)) {
     // extend with formcontent
     block.value = formcontent.blocks[block.name];
-  } else {
-    // use default values
+  } else if (_.has(block, 'defaultvalue')) {
+    // use default value(s)
     block.value = block.defaultvalue
   }
+  // TODO manage missing default value if not image (we want defaults for all but not for images)
 
   // extend with HTML
   switch(block.type) {
@@ -193,7 +217,7 @@ const augment_block = (formcontent) => { return (block) => {
         values.push('');
       block.control = 
         '<table border="0">'+
-        values.map( (val) => render_tablerow(block, val) ).join('\n') +
+        values.map( (val) => render_existing_tablerow(block, val) ).join('\n') +
 				'</table>';
     } else {
 			block.template = '';
@@ -204,13 +228,10 @@ const augment_block = (formcontent) => { return (block) => {
   case 'IMAGE':
     if (block.repeat == 'yes') {
 			block.template = render_template_image(block);
-      let values = block.value;
-      if (values.length == 0)
-        // add an empty one (so that we have at least one)
-        values.push('');
       block.control = 
         '<table border="0">' +
-        values.map( (val) => render_image(block, val) ).join('\n') +
+        block.value.map( (val) => render_existing_image(block, val) ).join('\n') +
+        render_add_image(block) +
         '</table>';
     } else {
 			block.template = '';
@@ -226,6 +247,10 @@ const augment_block = (formcontent) => { return (block) => {
   return block;
 }}
 
+// we need this for forms, because single fields return single values
+// but multiple fields return arrays and we always want to handle arrays
+// (this simplifies the code)
+const ensure_array = (thing) => _.flatten([thing]);
 
 //
 // the PDF assembly
@@ -236,9 +261,10 @@ const assemble = (db) => { return async (req, res) => {
     const formtype = req.body.formtype;
     const form = forms[formtype];
 
-    //console.log('fields', req.body);
-    //console.log('files', req.files);
     console.log("assemble for fields", _.keys(req.body).join(' '), "and files", _.keys(req.files).join(' '));
+
+    console.log('req.body', req.body);
+    console.log('req.files', req.files);
 
     // replace \r\n by \n
     // replace multiple \n by single \n
@@ -251,9 +277,10 @@ const assemble = (db) => { return async (req, res) => {
           return [ kv[0], kv[1].replace(/(\r\n)+/g, '\n') ]
       })
     )
+    console.log('revised req.body', req.body);
 
     //
-    // save to DB
+    // interpret form data and store in `formvalue`
     //
 
     // form name = key
@@ -268,12 +295,13 @@ const assemble = (db) => { return async (req, res) => {
 
     // form data that we get as field
     const form_blocks_nonfile = form.form_blocks
-      .filter( block => _.has(req.body, block.name) )
+      .filter( block => (_.has(req.body, block.name) && block.type != 'IMAGE') )
       .map( block => {
         if (block.repeat == 'yes')
-          // ensure we have an array, even if the form gives only one value
-          return [ block.name, _.flatten([req.body[block.name]]) ]
+          // array as value (even if only one value)
+          return [ block.name, ensure_array(req.body[block.name]) ]
         else
+          // no array as value
           return [ block.name, req.body[block.name] ]
       });
 
@@ -299,35 +327,78 @@ const assemble = (db) => { return async (req, res) => {
     //   - <block>_TYPE = new_file
     //   - <block>_FILE = multipart form data (user upload)
 
+    const mime_mapper = {
+      'image/png': { extension: '.png' },
+      'application/pdf': { extension: '.pdf' },
+    };
+
+    var errors = [];
     const form_blocks_file = form.form_blocks
-      .filter( block => _.has(req.files, block.name) ) 
+      .filter( block => (block.type == 'IMAGE' && _.has(req.body, block.name) ) )
       .map( block => {
-        if (block.repeat == 'yes')
-          // ensure we have an array, even if the form gives only one value
-          return [ block.name, _.flatten([
-              req.files[block.name].map( (file) => {
-                const mapinfo = mime_mapper[file.mimetype];
-                return targetname = tmpdir.name + '/' + file.filename + mapinfo.extension;
+        let collected = []        
+        const existing_or_new = ensure_array(req.body[block.name]);
+        let existing_idx = 0, new_idx = 0;
+        for(let i=0; i < existing_or_new.length; i++) {
+          if (existing_or_new[i] == 'existing_file') {
+            // no new file was uploaded, use body fields
+            collected.push({
+              filename: ensure_array(req.body[block.name+'_FILENAME'])[existing_idx],
+              hash: ensure_array(req.body[block.name+'_HASH'])[existing_idx],
+              mimetype: ensure_array(req.body[block.name+'_MIMETYPE'])[existing_idx]
               })
-            ]) ]
-        else
-          return [ block.name, req.body[block.name] ]
-      });
-      */
+            existing_idx++;
+          } else if (existing_or_new[i] == 'new_file') {
+            // new file was uploaded, use multer fields
+            const file = req.files[block.name+'_FILE'][new_idx]
+            console.log("handling file",file);            
+            if (!_.has(mime_mapper, file.mimetype)) {
+              errors.push(`received file ${file.originalname} with unprocessable mime type ${file.mimetype} (can handle {${_.keys(mime_mapper).join(';')}})`);
+            } else {
+              collected.push({
+                filename: file.originalname,
+                hash: file.filename,
+                mimetype: file.mimetype
+              })
+            }
+            new_idx++;
+          } else {
+            console.error("got invalid content for existing_or_new: %s", existing_or_new[i]);
+          }
+        }
+        return [ block.name, collected ]
+      })
+
+    if (errors.length > 0) {
+      const msg = "errors interpreting form data: "+errors.join('\n');
+      res.status(200);
+      res.send(msg);
+      res.end();
+      throw msg;
+    }
+  
+    // check if files need to be deleted and delete them
+    // TODO implement, for now we leave orphan files
 
     const formvalue = {
       formtype: formtype,
-      //blocks: _.object(form_blocks_nonfile.concat(form_blocks_file))
-      blocks: _.object(form_blocks_nonfile)
+      blocks: _.object(form_blocks_nonfile.concat(form_blocks_file))
     }
-    //console.log('formvalue', formvalue);
+    console.log('formvalue', formvalue);
 
-    if (!originalexists || formkey == originalformkey)
+    //
+    // save `formvalue` to DB
+    //
+
+    if (!originalexists || formkey == originalformkey) {
       // update by setting again
-      db.get('filledforms').set(formkey, formvalue).write();
-    else
+      console.info('storing under key',formkey)
+      await db.get('filledforms').set(formkey, formvalue).write()
+    } else {
       // delete old and insert new
-      db.get('filledforms').remove(originalformkey).set(formkey, formvalue).write();
+      console.info('deleting key',originalformkey,'and storing key',formkey)
+      await db.get('filledforms').remove(originalformkey).set(formkey, formvalue).write()
+    }
 
     //
     // assemble PDF
@@ -336,38 +407,26 @@ const assemble = (db) => { return async (req, res) => {
     const tmpdir = tempfile.dirSync({ dir: config.temp_dir_location, unsafeCleanup: true });
     console.log("created temporary directory for assemble: "+tmpdir.name);
 
+    // interpret `formvalue` as PDF replacements
     var replacements = {};
-
-    const mime_mapper = {
-      'image/png': { extension: '.png' },
-      'application/pdf': { extension: '.pdf' },
-    };
-
-    var errors = [];
-
     for(let block of form.form_blocks) {
       if (block.type == 'IMAGE' ) {
-        if ( _.has(req.files, block.name) ) {
+        if ( _.has(formvalue.blocks, block.name) ) {
           // we have at least one file of that block
           var replacement_parts = [];
-          for(let file of req.files[block.name]) {
-            // move to target dir and rename and record for replacement
-            console.log("handling file",file);
-            if (!_.has(mime_mapper, file.mimetype)) {
-              errors.push(`received file ${file.originalname} with unprocessable mime type ${file.mimetype} (can handle {${_.keys(mime_mapper).join(';')}})`);
-            } else {
+          for(let file of formvalue.blocks[block.name]) {
+            // copy to target dir and rename for replacement
               const mapinfo = mime_mapper[file.mimetype];
-              const targetname = tmpdir.name + '/' + file.filename + mapinfo.extension;
-              const textargetname = tmpdir.name + '/' + file.filename;
-              fs.renameSync(file.path, targetname);
-              replacement_parts.push({ PATH: textargetname });
-            }
+            const targetname = tmpdir.name + '/' + file.hash + mapinfo.extension;
+            const tex_targetname = tmpdir.name + '/' + file.hash;
+            fs.copyFileSync(config.upload_directory+'/'+file.hash, targetname);
+            replacement_parts.push({ PATH: tex_targetname });
           }
           replacements[block.name] = replacement_parts;
         }
       } else if (block.type == 'TEXT' || block.type == 'TABLEROW') {
-				if (_.has(req.body, block.name)) {
-          const content = req.body[block.name];
+				if (_.has(formvalue.blocks, block.name)) {
+          const content = formvalue.blocks[block.name];
 					if (block.repeat == 'yes')  {
             if (Array.isArray(content)) {
               replacements[block.name] = content.map( (text) => ({ TEXT: text }) );
@@ -380,14 +439,6 @@ const assemble = (db) => { return async (req, res) => {
       } else {
         console.log("block type "+block.type);
       }
-    }
-
-    if (errors.length > 0) {
-      const msg = "errors interpreting form data: "+errors.join('\n');
-      res.status(200);
-      res.send(msg);
-      res.end();
-      throw msg;
     }
 
     console.log("replacements", replacements);
@@ -432,7 +483,7 @@ const all_formspec_image_blocks = _.flatten(
         formspec.form_blocks.filter( block => block.type == 'IMAGE' ) )
 );
 const multer_fields = all_formspec_image_blocks
-  .map( block => ({ name: block.name, maxCount: config.max_upload_per_field }) );
+  .map( block => ({ name: block.name+"_FILE", maxCount: config.max_upload_per_field }) );
 console.log("multer_fields: ",multer_fields);
 
 //

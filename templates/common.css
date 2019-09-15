@@ -9,6 +9,12 @@ input.more {
   font-weight:bold;
 }
 
+input.delete {
+  background-color:red;
+  color:white;
+  font-weight:bold;
+}
+
 textarea {
   background-color:#eee;
 }
