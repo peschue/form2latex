@@ -113,6 +113,7 @@ const edit_form = (db) => { return (req, res) => {
     const formtype = req.params.formtype;
     const formkey = req.params.formkey;
     let formcontent = {};
+    // TODO solve problems that happen when a form is not renamed from "new"
     if (formkey != 'new') {
       formcontent = db.get('filledforms').get(formkey).value();
       if (formtype != formcontent.formtype)
@@ -255,7 +256,10 @@ const assemble = (db) => { return async (req, res) => {
     // save to DB
     //
 
+    // form name = key
     const formkey = req.body.formkey;
+    if (formkey == 'new')
+      throw "cannot store name 'new'!";
     const originalexists = db.get('filledforms').has(originalformkey).value();
     const newexists = db.get('filledforms').has(formkey).value();
     console.log('originalexists', originalexists);
