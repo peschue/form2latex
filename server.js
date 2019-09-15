@@ -277,9 +277,28 @@ const assemble = (db) => { return async (req, res) => {
           return [ block.name, req.body[block.name] ]
       });
 
-    // form data that we get as newly uploaded file
-    // TODO there are fields, old files, new files!!!
-    /*
+    //
+    // form data that we get as newly uploaded or existing file
+    //
+    // uploaded files are managed as follows:
+    // * they stay in the uploaded directory as the hashes how they are created
+    // * the DB stores the hash and the filename specified by the user
+    // * if a file is removed from a form, its hash file is only deleted
+    //   if no other form in the DB refers to it (this happens by versioning)
+    // TODO the last is not yet implemented, currently hash files can stay as orphans
+    //
+    // upload is managed as follows:
+    // * each file is either an existing or a new file
+    // * existing files have fields
+    //   - <block>_TYPE = existing_file
+    //   - <block>_HASH = hash (file name on disk)
+    //   - <block>_FILENAME = filename (user-specified filename)
+    //   - <block>_MIMETYPE = mime type
+    // * existing files that are not sent back are considered deleted
+    // * newly uploaded files have fields
+    //   - <block>_TYPE = new_file
+    //   - <block>_FILE = multipart form data (user upload)
+
     const form_blocks_file = form.form_blocks
       .filter( block => _.has(req.files, block.name) ) 
       .map( block => {
