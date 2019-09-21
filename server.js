@@ -22,6 +22,8 @@ const config = JSON.parse(fs.readFileSync(configFile, "utf-8"));
 
 const { forms } = require(config.forms_spec);
 
+const hh = require('./helpers.js')
+
 const preloaded = {
   formselection: fs.readFileSync("templates/formselection.mustache", "utf8"),
   form: fs.readFileSync("templates/form.mustache", "utf8"),
@@ -263,22 +265,9 @@ const assemble = (db) => { return async (req, res) => {
     const form = forms[formtype];
 
     console.log("assemble for fields", _.keys(req.body).join(' '), "and files", _.keys(req.files).join(' '));
-
-    console.log('req.body', req.body);
-    console.log('req.files', req.files);
-
-    // replace \r\n by \n
-    // replace multiple \n by single \n
-    req.body = _.object(
-      _.pairs(req.body)
-      .map( (kv) => {
-        if (_.isArray(kv[1]))
-          return [ kv[0], kv[1].map((v) => v.replace(/(\r\n)+/g, '\n')) ]
-        else
-          return [ kv[0], kv[1].replace(/(\r\n)+/g, '\n') ]
-      })
-    )
-    console.log('revised req.body', req.body);
+    console.debug('req.body', req.body);
+    console.debug('req.files', req.files);
+    req.body = hh.normalize_newlines(req.body)
 
     //
     // interpret form data and store in `formvalue`
@@ -294,7 +283,7 @@ const assemble = (db) => { return async (req, res) => {
     if (newexists && formkey != originalformkey)
       throw "cannot store under existing name!";
 
-      // form data that we get as field
+    // form data that we get as field
     const form_blocks_nonfile = form.form_blocks
       .filter( block => (_.has(req.body, block.name) && block.type != 'IMAGE') )
       .map( block => {
@@ -334,41 +323,8 @@ const assemble = (db) => { return async (req, res) => {
     };
 
     var errors = [];
-    const form_blocks_file = form.form_blocks
-      .filter( block => (block.type == 'IMAGE' && _.has(req.body, block.name) ) )
-      .map( block => {
-        let collected = []        
-        const existing_or_new = ensure_array(req.body[block.name]);
-        let existing_idx = 0, new_idx = 0;
-        for(let i=0; i < existing_or_new.length; i++) {
-          if (existing_or_new[i] == 'existing_file') {
-            // no new file was uploaded, use body fields
-            collected.push({
-              filename: ensure_array(req.body[block.name+'_FILENAME'])[existing_idx],
-              hash: ensure_array(req.body[block.name+'_HASH'])[existing_idx],
-              mimetype: ensure_array(req.body[block.name+'_MIMETYPE'])[existing_idx]
-              })
-            existing_idx++;
-          } else if (existing_or_new[i] == 'new_file') {
-            // new file was uploaded, use multer fields
-            const file = req.files[block.name+'_FILE'][new_idx]
-            console.log("handling file",file);            
-            if (!_.has(mime_mapper, file.mimetype)) {
-              errors.push(`received file ${file.originalname} with unprocessable mime type ${file.mimetype} (can handle {${_.keys(mime_mapper).join(';')}})`);
-            } else {
-              collected.push({
-                filename: file.originalname,
-                hash: file.filename,
-                mimetype: file.mimetype
-              })
-            }
-            new_idx++;
-          } else {
-            console.error("got invalid content for existing_or_new: %s", existing_or_new[i]);
-          }
-        }
-        return [ block.name, collected ]
-      })
+    const form_blocks_file = hh.interpret_file_formdata(
+      form.form_blocks, req.body, req.files, mime_mapper, errors);
 
     if (errors.length > 0) {
       const msg = "errors interpreting form data: "+errors.join('\n');
