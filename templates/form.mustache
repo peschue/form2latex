@@ -31,7 +31,6 @@ Copyright (c) 2019 Peter Schüller
 				let template = $("#template-"+name).find('.tocopy');
 				$(this).closest('.onevaluecontainer').after(template.clone(true));
 			});
-
 		}
 
     $(document).ready(install);
@@ -47,14 +46,31 @@ Copyright (c) 2019 Peter Schüller
 	</div>
 
   <form action="{{{prefix}}}/assemble" method="post" enctype="multipart/form-data">
-  <p><b>Key:</b> <input type="text" name="formkey" value="{{formkey}}"/></p>
+  <p>
+    <b>Content Name:</b>
+    <input type="text" name="formkey" value="{{formkey}}"/>
+    Version:
+    <b>v{{version}}{{#isDraft}}-Draft{{/isDraft}}</b>
+  </p>
   <input type="hidden" name="originalformkey" value="{{formkey}}"/>
   <input type="hidden" name="formtype" value="{{formtype}}"/>
   {{#blocks}}
 	<p class="header">{{name}}</p>
 	{{{control}}}
   {{/blocks}}
-  <p><input type="submit" name="submit" value="Save &amp; Generate PDF"></p>
+  {{#isDraft}}
+  <p>
+    <input type="submit" name="savedraft" value="Save &amp; Generate PDF">
+  </p>
+    {{#hasPDF}}
+    <p>
+      <input type="submit" name="finalizeversion" value="Finalize Version {{version}} - This will not save changes in above form!">
+    </p>
+    {{/hasPDF}}
+  {{/isDraft}}
+  {{^isDraft}}
+    <p><a href="{{{pdflink}}}" target="_blank">PDF {{formkey}}v{{version}}</a></p>
+  {{/isDraft}}
   </form>
 
   <br/>

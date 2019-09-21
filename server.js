@@ -114,18 +114,50 @@ const edit_form = (db) => { return (req, res) => {
   try {
     const formtype = req.params.formtype;
     const formkey = req.params.formkey;
+    let version = 1;
+    let isDraft = true;
+    let hasPDF = false;
+    let pdflink = undefined;
     let formcontent = {};
     // TODO solve problems that happen when a form is not renamed from "new"
     if (formkey != 'new') {
-      formcontent = db.get('filledforms').get(formkey).value();
-      if (formtype != formcontent.formtype)
+      const formcontainer = db.get('filledforms').get(formkey).value();
+      if (formtype != formcontainer.formtype)
         throw "inconsistent form type!";
+      // if a version is specified, try to use that version
+      if (req.params.version != undefined) {
+        // make sure that version exists
+        // versions are 1-based
+        if ( (req.params.version > 0) && 
+             (req.params.version <= formcontainer.versions.length) ) {
+          version = req.params.version
+        }
+      }
+      if (version == undefined) {
+        // address the latest version
+        version = formcontainer.versions.length
+      }
+      // address the specified version (1-based version)
+      formcontent = formcontainer.versions[version-1]
+      // crosscheck
+      if (formcontent.version != version)
+        throw `versions must be sorted in correct order in json! got mismatch for version ${version} and formcontent.version ${formcontent.version}!`
+      // check if the used version is a draft version
+      isDraft = !formcontent.final
+      hasPDF = _.has(formcontent,"pdffile")
+      if (hasPDF)
+        pdflink = formcontent.pdffile
     }
+
     const formspec = forms[formtype];
     let substitutions = _.clone(common_substitutions);
     _.extend(substitutions, {
       formkey: formkey,
       formtype: formtype,
+      version: version,
+      isDraft: isDraft,
+      hasPDF: hasPDF,
+      pdflink: pdflink,
       blocks: formspec.form_blocks.map(augment_block(formcontent))
     });
     res.contentType("html");
