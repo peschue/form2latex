@@ -2,11 +2,23 @@ const _ = require("underscore")
 const child_process = require('child_process')
 const fs = require("fs");
 
+const configFile = process.env.CONFIG || "configs/config_local.json"
+const config = JSON.parse(fs.readFileSync(configFile, "utf-8"));
+
+exports.config = config
+
 // we need this for forms, because single fields return single values
 // but multiple fields return arrays and we always want to handle arrays
 // (this simplifies the code)
 const ensure_array = (thing) => _.flatten([thing])
 exports.ensure_array = ensure_array
+
+exports.common_substitutions = {
+  commoncss: fs.readFileSync("templates/common.css", "utf8"),
+  commonjs: fs.readFileSync("templates/common.js", "utf8"),
+  prefix: config.prefix,
+  site_title: config.site_title,
+}
 
 // replace \r\n by \n
 // replace multiple \n by single \n
@@ -91,7 +103,7 @@ exports.interpret_file_formdata = (blocks, req_body, req_files, errors) => {
 	return ret;
 }
 
-exports.assemble_pdf = async (tmpdir, config, form, formvalue) => {
+exports.assemble_pdf = async (tmpdir, form, formvalue) => {
 	// interpret `formvalue` as PDF replacements
 	var replacements = {};
 	for(let block of form.form_blocks) {

@@ -16,25 +16,16 @@ const mustache = require("mustache");
 const low = require('lowdb');
 const FileAsync = require('lowdb/adapters/FileAsync')
 
-const configFile = process.env.CONFIG || "configs/config_local.json"
-const config = JSON.parse(fs.readFileSync(configFile, "utf-8"));
+const hh = require('./helpers.js')
+const config = hh.config
+const formselection = require('./formselection.js')
 
 const { forms } = require(config.forms_spec);
 
-const hh = require('./helpers.js')
-
 const preloaded = {
-  formselection: fs.readFileSync("templates/formselection.mustache", "utf8"),
   form: fs.readFileSync("templates/form.mustache", "utf8"),
   login: fs.readFileSync("templates/login.mustache", "utf8"),
 };
-
-const common_substitutions = {
-  commoncss: fs.readFileSync("templates/common.css", "utf8"),
-  commonjs: fs.readFileSync("templates/common.js", "utf8"),
-  prefix: config.prefix,
-  site_title: config.site_title,
-}
 
 const auth = (req, res, next) => {
   if (req.session && req.session.logged_in !== undefined)
@@ -57,7 +48,7 @@ const app_login = (req, res) => {
       console.log("displaying login page");
       res.contentType("html");
       res.status(200);
-      res.send(mustache.render(preloaded.login, common_substitutions));
+      res.send(mustache.render(preloaded.login, hh.common_substitutions));
     } else if (_.has(config.users, req.query.user) &&
                req.query.password === config.users[req.query.user]) {
       console.log("login of "+req.query.user+" successful");
@@ -77,34 +68,6 @@ const app_logout = (req, res) => {
   req.session.destroy();
   res.redirect(config.prefix+'/');
 }
-
-
-//
-// the list of forms
-//
-const formselection = (db) => { return (req, res) => {
-  try {
-    const forms = db.get('filledforms').value();
-    let substitutions = _.clone(common_substitutions);
-    _.extend(substitutions, {
-      commoncss: '',
-      commonjs: '',
-      newformtype: config.newformtype,
-      forms: _.pairs(forms).map( (kv) => ({ formkey: kv[0], formtype: kv[1].formtype }) ),
-    });
-    //console.log(substitutions.forms);
-    res.contentType("html");
-    res.status(200);
-    res.send(mustache.render(preloaded.formselection, substitutions));
-  } catch (except) {
-    const msg = "an unknown error occurred at "+new Date();
-    console.error(msg);
-    console.error(except+' '+except.stack);
-    res.status(500);
-    res.end(msg);
-  }
-}}
-
 
 //
 // the form editing
@@ -153,7 +116,7 @@ const edit_form = (db) => { return (req, res) => {
 		}
 
     const formspec = forms[formtype];
-    let substitutions = _.clone(common_substitutions);
+    let substitutions = _.clone(hh.common_substitutions);
     _.extend(substitutions, {
       formkey: formkey,
       formtype: formtype,
@@ -385,7 +348,7 @@ const save_and_create_pdf = (db) => { return async (req, res) => {
     const tmpdir = tempfile.dirSync({ dir: config.temp_dir_location, unsafeCleanup: true })
 		console.log("created temporary directory for assemble: "+tmpdir.name)
 		// do it
-		const pdffile = hh.assemble_pdf(tmpdir, config, form, formvalue)
+		const pdffile = hh.assemble_pdf(tmpdir, form, formvalue)
     const binarypdf = fs.readFileSync(pdffile);
     const pdfstat = fs.statSync(pdffile);
     console.log("removing temporary directory "+tmpdir.name);
@@ -433,9 +396,8 @@ low(lowdb_adapter)
 
 		app.get(config.prefix + '/login', app_login);
 		app.get(config.prefix + '/logout', app_logout);
-		app.get(config.prefix + '/', auth, formselection(db));
-		app.get(config.prefix + '/editform/:formtype/:formkey/:version', auth, edit_form(db)); // specific with version
-		app.get(config.prefix + '/editform/:formtype/:formkey', auth, edit_form(db));	// generic (latest version)
+		app.get(config.prefix + '/', auth, formselection.handler(config, db));
+		app.get(config.prefix + '/editform/:formtype/:formkey/:version', auth, edit_form(db));
 		app.post(config.prefix + '/save_and_create_pdf', auth, upload.fields(multer_fields), save_and_create_pdf(db));
 
 		return db.defaults({
