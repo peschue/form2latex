@@ -100,9 +100,9 @@ const edit_form = (db) => { return (req, res) => {
         throw `versions must be sorted in correct order in json! got mismatch for version ${version} and formcontent.version ${formcontent.version}!`
       // check if the used version is a draft version
       isDraft = !formcontent.final
-      hasPDF = _.has(formcontent,"pdffile")
+      hasPDF = _.has(formcontent,"pdf")
       if (hasPDF)
-        pdflink = formcontent.pdffile
+        pdflink = formcontent.pdf
 		} else {
 			// new versions start at 1 and are drafts
 			version = 1
@@ -114,7 +114,8 @@ const edit_form = (db) => { return (req, res) => {
     _.extend(substitutions, {
       formkey: formkey,
       formtype: formtype,
-      version: version,
+			version: version,
+			basedOnVersion: formcontent.based_on_version,
       isDraft: isDraft,
       hasPDF: hasPDF,
       pdflink: pdflink,
@@ -248,16 +249,14 @@ const form_action = (db) => { return async (req, res) => {
 		if (_.has(req.body, 'save_and_assemble')) {
 			return await save_and_create_pdf(db, req, res);
 		} else if (_.has(req.body, 'finalize_version')) {
-			// TODO implement
-			res.redirect(req.headers.referer)
+			return await finalize_version(db, req, res)
 		} else if (_.has(req.body, 'delete_draft')) {
 			return await delete_draft(db, req, res)
 		} else if (_.has(req.body, 'draft_from_this')) {
-			// TODO implement
-			res.redirect(req.headers.referer)
+			return await draft_from_this(db, req, res)
 		}
   } catch(except) {
-    const msg = "exception during form action: "+new Date()+except+' '+except.stack;
+    const msg = "exception during form action: "+new Date()+'\n\n'+except;
     console.error(msg);
     res.status(500);
     res.end(msg);
@@ -374,29 +373,67 @@ const save_and_create_pdf = async (db, req, res) => {
 	res.end();
 }
 
-const delete_draft = async (db, req, res) => {
-	const formkey = req.params.formkey
-	const version = req.params.version
-
+const get_formvalue_throw_if_form_key_or_version_bad = (db, formkey, version) => {
 	if (!db.get('filledforms').has(formkey).value())
 		throw "invalid form key "+formkey
-
 	const formvalue = db.get('filledforms').get(formkey).value()
 	if (formvalue.versions.length < version)
 		throw "invalid version "+version+" of form key "+formkey
+	return formvalue
+}
+
+const delete_draft = async (db, req, res) => {
+	const formkey = req.params.formkey
+	const version = req.params.version
+	const formvalue = get_formvalue_throw_if_form_key_or_version_bad(db, formkey, version)
+
 	if (formvalue.versions[version-1].final)
 		throw "version "+version+" of form key "+formkey+" is final and cannot be deleted"
 	if (version == 1) {
 		// delete whole formkey
-		console.log('deleting form key "'+formkey+'"')
 		const ret = await db.get('filledforms').unset(formkey).write()
-		console.log('deleted',ret)
 	} else {
 		// delete only the one version
-		console.log('deleting version',version,'of form key',formkey)
 		const ret = await db.get('filledforms').get(formkey).get('versions').pullAt(version-1).write()
-		console.log('deleted',ret)
 	}
+	res.redirect(config.prefix);
+	res.end()
+}
+
+const finalize_version = async (db, req, res) => {
+	const formkey = req.params.formkey
+	const version = req.params.version
+	const formvalue = get_formvalue_throw_if_form_key_or_version_bad(db, formkey, version)
+
+	if (formvalue.versions[version-1].final)
+		throw "version "+version+" of form key "+formkey+" is already final"
+	if (!_.has(formvalue.versions[version-1], 'pdf'))
+		throw "version "+version+" of form key "+formkey+" has no PDF -> cannot be made final"
+
+	// set final
+	await db.get('filledforms').get(formkey).get('versions').nth(version-1).set('final',true).write()
+	res.redirect(config.prefix);
+	res.end()
+}
+
+const draft_from_this = async (db, req, res) => {
+	const formkey = req.params.formkey
+	const version = req.params.version
+
+	const formvalue = get_formvalue_throw_if_form_key_or_version_bad(db, formkey, version)
+
+	if (!formvalue.versions[version-1].final)
+		throw "version "+version+" of form key "+formkey+" is not final, cannot create draft from draft"
+	if (!formvalue.versions[formvalue.versions.length-1].final)
+		throw "version "+(formvalue.versions.length-1)+" of form key "+formkey+" is a draft, cannot create a second draft"
+
+	let newversion = JSON.parse(JSON.stringify(formvalue.versions[version-1]))
+	newversion.version = formvalue.versions.length+1
+	newversion.final = false
+	newversion.based_on_version = version;
+
+	// append version
+	await db.get('filledforms').get(formkey).get('versions').push(newversion).write()
 	res.redirect(config.prefix);
 	res.end()
 }
