@@ -244,21 +244,18 @@ const augment_block = (formcontent) => { return (block) => {
 
 const form_action = (db) => { return async (req, res) => {
   try {
-		const formkey = req.params.formkey
-		const version = req.params.version
 		console.log('req.body',req.body)
 		if (_.has(req.body, 'save_and_assemble')) {
-			return save_and_create_pdf(db, req, res);
+			return await save_and_create_pdf(db, req, res);
 		} else if (_.has(req.body, 'finalize_version')) {
 			// TODO implement
+			res.redirect(req.headers.referer)
 		} else if (_.has(req.body, 'delete_draft')) {
-			// TODO implement
+			return await delete_draft(db, req, res)
 		} else if (_.has(req.body, 'draft_from_this')) {
 			// TODO implement
+			res.redirect(req.headers.referer)
 		}
-		//console.log(req)
-		res.redirect(req.headers.referer)
-		//res.redirect(config.prefix)
   } catch(except) {
     const msg = "exception during form action: "+new Date()+except+' '+except.stack;
     console.error(msg);
@@ -271,7 +268,8 @@ const form_action = (db) => { return async (req, res) => {
 // saving and creating a PDF
 //
 const save_and_create_pdf = async (db, req, res) => {
-	const originalformkey = req.body.originalformkey;
+	const formkey = req.params.formkey;
+	const version = req.params.version; // TODO use version below
 	const formtype = req.body.formtype;
 	const form = forms[formtype];
 
@@ -285,13 +283,13 @@ const save_and_create_pdf = async (db, req, res) => {
 	//
 
 	// checkout if we rename into an existing name
-	const formkey = req.body.formkey;
-	if (formkey == 'new')
+	const newformkey = req.body.formkey;
+	if (newformkey == 'new')
 		throw "cannot store name 'new'!";
-	const originalexists = db.get('filledforms').has(originalformkey).value();
-	const newexists = db.get('filledforms').has(formkey).value();
+	const originalexists = db.get('filledforms').has(formkey).value();
+	const newexists = db.get('filledforms').has(newformkey).value();
 	console.log('originalexists', originalexists);
-	if (newexists && formkey != originalformkey)
+	if (newexists && formkey != newformkey)
 		throw "cannot store under existing name!";
 		
 	// form data that we get as field
@@ -318,7 +316,7 @@ const save_and_create_pdf = async (db, req, res) => {
 	const newblocks = _.object(form_blocks_nonfile.concat(form_blocks_file));
 	if (originalexists) {
 		// overwrite draft version / insert draft version
-		formvalue = db.get('filledforms').get(originalformkey).value();
+		formvalue = db.get('filledforms').get(formkey).value();
 		const latestversion = formvalue.versions.length
 		if (formvalue.versions[latestversion-1].final) {
 			// new draft version
@@ -347,14 +345,14 @@ const save_and_create_pdf = async (db, req, res) => {
 	console.log('formvalue', formvalue);
 
 	// save `formvalue` to DB
-	if (!originalexists || formkey == originalformkey) {
+	if (!originalexists || formkey == newformkey) {
 		// update by setting again
-		console.info('storing under key',formkey)
-		await db.get('filledforms').set(formkey, formvalue).write()
+		console.info('storing under key',newformkey)
+		await db.get('filledforms').set(newformkey, formvalue).write()
 	} else {
 		// delete old and insert new
-		console.info('deleting key',originalformkey,'and storing key',formkey)
-		await db.get('filledforms').remove(originalformkey).set(formkey, formvalue).write()
+		console.info('deleting key',formkey,'and storing key',newformkey)
+		await db.get('filledforms').unset(formkey).set(newformkey, formvalue).write()
 	}
 
 	// assemble PDF
@@ -374,6 +372,33 @@ const save_and_create_pdf = async (db, req, res) => {
 	res.setHeader('Content-Disposition', 'attachment; filename='+form.pdf_send_filename);
 	res.send(binarypdf);
 	res.end();
+}
+
+const delete_draft = async (db, req, res) => {
+	const formkey = req.params.formkey
+	const version = req.params.version
+
+	if (!db.get('filledforms').has(formkey).value())
+		throw "invalid form key "+formkey
+
+	const formvalue = db.get('filledforms').get(formkey).value()
+	if (formvalue.versions.length < version)
+		throw "invalid version "+version+" of form key "+formkey
+	if (formvalue.versions[version-1].final)
+		throw "version "+version+" of form key "+formkey+" is final and cannot be deleted"
+	if (version == 1) {
+		// delete whole formkey
+		console.log('deleting form key "'+formkey+'"')
+		const ret = await db.get('filledforms').unset(formkey).write()
+		console.log('deleted',ret)
+	} else {
+		// delete only the one version
+		console.log('deleting version',version,'of form key',formkey)
+		const ret = await db.get('filledforms').get(formkey).get('versions').pullAt(version-1).write()
+		console.log('deleted',ret)
+	}
+	res.redirect(config.prefix);
+	res.end()
 }
 
 const all_formspec_image_blocks = _.flatten(
