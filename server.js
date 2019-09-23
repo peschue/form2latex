@@ -34,12 +34,6 @@ const auth = (req, res, next) => {
     return res.redirect(config.prefix+'/login');
 };
 
-const sleep = (ms) => {
-  return new Promise(resolve=>{
-    setTimeout(resolve,ms)
-  })
-}
-
 //
 // the login page
 //
@@ -248,123 +242,139 @@ const augment_block = (formcontent) => { return (block) => {
   return block;
 }}
 
+const form_action = (db) => { return async (req, res) => {
+  try {
+		const formkey = req.params.formkey
+		const version = req.params.version
+		console.log('req.body',req.body)
+		if (_.has(req.body, 'save_and_assemble')) {
+			return save_and_create_pdf(db, req, res);
+		} else if (_.has(req.body, 'finalize_version')) {
+			// TODO implement
+		} else if (_.has(req.body, 'delete_draft')) {
+			// TODO implement
+		} else if (_.has(req.body, 'draft_from_this')) {
+			// TODO implement
+		}
+		//console.log(req)
+		res.redirect(req.headers.referer)
+		//res.redirect(config.prefix)
+  } catch(except) {
+    const msg = "exception during form action: "+new Date()+except+' '+except.stack;
+    console.error(msg);
+    res.status(500);
+    res.end(msg);
+  }
+}}
+
 //
 // saving and creating a PDF
 //
-const save_and_create_pdf = (db) => { return async (req, res) => {
-  try {
-    const originalformkey = req.body.originalformkey;
-    const formtype = req.body.formtype;
-    const form = forms[formtype];
+const save_and_create_pdf = async (db, req, res) => {
+	const originalformkey = req.body.originalformkey;
+	const formtype = req.body.formtype;
+	const form = forms[formtype];
 
-    console.log("assemble for fields", _.keys(req.body).join(' '), "and files", _.keys(req.files).join(' '));
-    console.debug('req.body', req.body);
-    console.debug('req.files', req.files);
-    req.body = hh.normalize_newlines(req.body)
+	console.log("assemble for fields", _.keys(req.body).join(' '), "and files", _.keys(req.files).join(' '));
+	console.debug('req.body', req.body);
+	console.debug('req.files', req.files);
+	req.body = hh.normalize_newlines(req.body)
 
-    //
-    // interpret form data and store in `formvalue`
-    //
+	//
+	// interpret form data and store in `formvalue`
+	//
 
-    // checkout if we rename into an existing name
-    const formkey = req.body.formkey;
-    if (formkey == 'new')
-      throw "cannot store name 'new'!";
-    const originalexists = db.get('filledforms').has(originalformkey).value();
-    const newexists = db.get('filledforms').has(formkey).value();
-    console.log('originalexists', originalexists);
-    if (newexists && formkey != originalformkey)
-			throw "cannot store under existing name!";
-			
-    // form data that we get as field
-    const form_blocks_nonfile = form.form_blocks
-      .filter( block => (_.has(req.body, block.name) && block.type != 'IMAGE') )
-      .map( block => {
-        if (block.repeat == 'yes')
-          // array as value (even if only one value)
-          return [ block.name, hh.ensure_array(req.body[block.name]) ]
-        else
-          // no array as value
-          return [ block.name, req.body[block.name] ]
-      });
+	// checkout if we rename into an existing name
+	const formkey = req.body.formkey;
+	if (formkey == 'new')
+		throw "cannot store name 'new'!";
+	const originalexists = db.get('filledforms').has(originalformkey).value();
+	const newexists = db.get('filledforms').has(formkey).value();
+	console.log('originalexists', originalexists);
+	if (newexists && formkey != originalformkey)
+		throw "cannot store under existing name!";
+		
+	// form data that we get as field
+	const form_blocks_nonfile = form.form_blocks
+		.filter( block => (_.has(req.body, block.name) && block.type != 'IMAGE') )
+		.map( block => {
+			if (block.repeat == 'yes')
+				// array as value (even if only one value)
+				return [ block.name, hh.ensure_array(req.body[block.name]) ]
+			else
+				// no array as value
+				return [ block.name, req.body[block.name] ]
+		});
 
-    // form data that we get as newly uploaded or existing file
-    var errors = [];
-    const form_blocks_file = hh.interpret_file_formdata(
-      form.form_blocks, req.body, req.files, errors);
-    if (errors.length > 0) {
-      const msg = "errors interpreting form data: "+errors.join('\n');
-      res.status(200);
-      res.send(msg);
-      res.end();
-      throw msg;
-    }
+	// form data that we get as newly uploaded or existing file
+	var errors = [];
+	const form_blocks_file = hh.interpret_file_formdata(
+		form.form_blocks, req.body, req.files, errors);
+	if (errors.length > 0)
+		throw "errors interpreting form data: "+errors.join('\n');
 
-		// get everything from db and insert/overwrite draft version
-		let formvalue = undefined;
-		const newblocks = _.object(form_blocks_nonfile.concat(form_blocks_file));
-		if (originalexists) {
-			// overwrite draft version / insert draft version
-			formvalue = db.get('filledforms').get(originalformkey).value();
-			const latestversion = formvalue.versions.length
-			if (formvalue.versions[latestversion-1].final) {
-				// new draft version
-				formvalue.versions.append({
-					version: latestversion+1,
-					final:false,
-					blocks: newblocks
-				});
-			} else {
-				// overwrite draft version
-				formvalue.versions[latestversion-1].blocks = newblocks;
-			}
+	// get everything from db and insert/overwrite draft version
+	let formvalue = undefined;
+	const newblocks = _.object(form_blocks_nonfile.concat(form_blocks_file));
+	if (originalexists) {
+		// overwrite draft version / insert draft version
+		formvalue = db.get('filledforms').get(originalformkey).value();
+		const latestversion = formvalue.versions.length
+		if (formvalue.versions[latestversion-1].final) {
+			// new draft version
+			formvalue.versions.append({
+				version: latestversion+1,
+				final:false,
+				blocks: newblocks
+			});
 		} else {
-			// create completely new record
-			formvalue = {
-				formtype: formtype,
-				versions: [
-					{
-						version: 1,
-						final: false,
-						blocks: newblocks
-					}
-				]
-			};
+			// overwrite draft version
+			formvalue.versions[latestversion-1].blocks = newblocks;
 		}
-    console.log('formvalue', formvalue);
+	} else {
+		// create completely new record
+		formvalue = {
+			formtype: formtype,
+			versions: [
+				{
+					version: 1,
+					final: false,
+					blocks: newblocks
+				}
+			]
+		};
+	}
+	console.log('formvalue', formvalue);
 
-    // save `formvalue` to DB
-    if (!originalexists || formkey == originalformkey) {
-      // update by setting again
-      console.info('storing under key',formkey)
-      await db.get('filledforms').set(formkey, formvalue).write()
-    } else {
-      // delete old and insert new
-      console.info('deleting key',originalformkey,'and storing key',formkey)
-      await db.get('filledforms').remove(originalformkey).set(formkey, formvalue).write()
-    }
+	// save `formvalue` to DB
+	if (!originalexists || formkey == originalformkey) {
+		// update by setting again
+		console.info('storing under key',formkey)
+		await db.get('filledforms').set(formkey, formvalue).write()
+	} else {
+		// delete old and insert new
+		console.info('deleting key',originalformkey,'and storing key',formkey)
+		await db.get('filledforms').remove(originalformkey).set(formkey, formvalue).write()
+	}
 
-    // assemble PDF
-    const tmpdir = tempfile.dirSync({ dir: config.temp_dir_location, unsafeCleanup: true })
-		console.log("created temporary directory for assemble: "+tmpdir.name)
-		// do it
-		const pdffile = hh.assemble_pdf(tmpdir, form, formvalue)
-    const binarypdf = fs.readFileSync(pdffile);
-    const pdfstat = fs.statSync(pdffile);
-    console.log("removing temporary directory "+tmpdir.name);
-    tmpdir.removeCallback();
+	// assemble PDF
+	const tmpdir = tempfile.dirSync({ dir: config.temp_dir_location, unsafeCleanup: true })
+	console.log("created temporary directory for assemble: "+tmpdir.name)
+	// do it
+	const pdffile = await hh.assemble_pdf(tmpdir, form, formvalue)
+	const binarypdf = fs.readFileSync(pdffile);
+	const pdfstat = fs.statSync(pdffile);
+	console.log("removing temporary directory "+tmpdir.name);
+	tmpdir.removeCallback();
 
-		// send reply
-    res.status(200);
-    res.setHeader('Content-Length', pdfstat.size);
-    res.setHeader('Content-Type', 'application/pdf');
-    res.setHeader('Content-Disposition', 'attachment; filename='+form.pdf_send_filename);
-    res.send(binarypdf);
-    res.end();
-  } catch(err) {
-    console.error('exception in assemble:', err);
-  }
-}}
+	// send reply
+	res.status(200);
+	res.setHeader('Content-Length', pdfstat.size);
+	res.setHeader('Content-Type', 'application/pdf');
+	res.setHeader('Content-Disposition', 'attachment; filename='+form.pdf_send_filename);
+	res.send(binarypdf);
+	res.end();
+}
 
 const all_formspec_image_blocks = _.flatten(
 	_.values(forms)
@@ -397,8 +407,8 @@ low(lowdb_adapter)
 		app.get(config.prefix + '/login', app_login);
 		app.get(config.prefix + '/logout', app_logout);
 		app.get(config.prefix + '/', auth, formselection.handler(config, db));
-		app.get(config.prefix + '/editform/:formtype/:formkey/:version', auth, edit_form(db));
-		app.post(config.prefix + '/save_and_create_pdf', auth, upload.fields(multer_fields), save_and_create_pdf(db));
+		app.get(config.prefix + '/forms/:formtype/:formkey/:version/edit', auth, edit_form(db));
+		app.post(config.prefix + '/forms/:formkey/:version/action', auth, upload.fields(multer_fields), form_action(db));
 
 		return db.defaults({
 				'filledforms': {},

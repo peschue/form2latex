@@ -29,15 +29,15 @@ Copyright (c) 2019 Peter Schüller
 		<b>{{formkey}}</b>
 		(type {{formtype}})
 	  {{#versions}}
-		<a href="{{{prefix}}}/editform/{{formtype}}/{{formkey}}/{{version}}">v{{version}}{{#isDraft}}-Draft{{/isDraft}}</a>
+		<a href="{{{prefix}}}/forms/{{formtype}}/{{formkey}}/{{version}}/edit">v{{version}}{{#isDraft}}-Draft{{/isDraft}}</a>
 		{{/versions}}
 	</p>
   {{/forms}}
 
   <h2>Create New Form</h2>
 
-  <form action="{{{prefix}}}/editform/{{newformtype}}/new" method="get">
-  <p><input type="submit" name="submit" value="Create New Form of type {{newformtype}}"></p>
+  <form action="{{{prefix}}}/forms/{{newformtype}}/new/1/edit" method="get">
+  <p><input type="submit" name="submit" value="Create new document of type {{newformtype}}"></p>
   </form>
 
   <p><a href="{{{prefix}}}/logout">Logout</a></p>

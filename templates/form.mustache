@@ -45,7 +45,7 @@ Copyright (c) 2019 Peter Schüller
   {{/blocks}}
 	</div>
 
-  <form action="{{{prefix}}}/save_and_create_pdf" method="post" enctype="multipart/form-data">
+  <form action="{{{prefix}}}/forms/{{formkey}}/{{version}}/action" method="post" enctype="multipart/form-data">
   <p>
     <b>Content Name:</b>
     <input type="text" name="formkey" value="{{formkey}}"/>
@@ -59,17 +59,17 @@ Copyright (c) 2019 Peter Schüller
 	{{{control}}}
   {{/blocks}}
   {{#isDraft}}
-  <p>
-    <input type="submit" name="savedraft" value="Save &amp; Generate PDF">
-  </p>
-    {{#hasPDF}}
-    <p>
-      <input type="submit" name="finalizeversion" value="Finalize Version {{version}} - This will not save changes in above form!">
-    </p>
-    {{/hasPDF}}
+  <p><input type="submit" name="save_and_assemble" value="Save &amp; Generate PDF" /></p>
   {{/isDraft}}
+  {{#isDraft}}
+  <p><input type="submit" name="delete_draft" value="Delete draft" /></p>
+  {{/isDraft}}
+  {{#hasPDF}}
+  <p><input type="submit" name="finalize_version" value="Finalize Version {{version}} - This will not save changes in above form!" /></p>
+  {{/hasPDF}}
   {{^isDraft}}
-    <p><a href="{{{pdflink}}}" target="_blank">PDF {{formkey}}v{{version}}</a></p>
+  <p><a href="{{{pdflink}}}" target="_blank">PDF {{formkey}}v{{version}}</a></p>
+  <p><input type="submit" name="draft_from_this" value="Create new draft from this version" /></p>
   {{/isDraft}}
   </form>
 

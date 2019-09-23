@@ -1,6 +1,7 @@
 const _ = require("underscore")
 const child_process = require('child_process')
 const fs = require("fs");
+const mustache = require("mustache");
 
 const configFile = process.env.CONFIG || "configs/config_local.json"
 const config = JSON.parse(fs.readFileSync(configFile, "utf-8"));
@@ -12,6 +13,13 @@ exports.config = config
 // (this simplifies the code)
 const ensure_array = (thing) => _.flatten([thing])
 exports.ensure_array = ensure_array
+
+const sleep = (ms) => {
+	return new Promise(resolve=>{
+		setTimeout(resolve,ms)
+	})
+}
+exports.sleep = sleep
 
 exports.common_substitutions = {
   commoncss: fs.readFileSync("templates/common.css", "utf8"),
