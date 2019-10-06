@@ -1,3 +1,10 @@
+/*
+ * form2latex - Common Helper Module
+ *
+ * MIT License
+ *
+ * Copyright (c) 2019 Peter Schüller
+ */
 const _ = require("underscore")
 const child_process = require('child_process')
 const fs = require("fs");

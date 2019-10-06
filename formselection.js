@@ -1,8 +1,16 @@
+/*
+ * form2latex - Form Selection Module
+ *
+ * MIT License
+ *
+ * Copyright (c) 2019 Peter Schüller
+ */
 const _ = require("underscore")
 const fs = require("fs");
 const mustache = require("mustache")
 
 const hh = require("./helpers.js")
+const config = hh.config
 
 const preloaded = {
   formselection: fs.readFileSync("templates/formselection.mustache", "utf8"),
@@ -11,7 +19,7 @@ const preloaded = {
 //
 // the list of forms
 //
-exports.handler = (config, db) => { return (req, res) => {
+exports.handler = (db) => { return (req, res) => {
   try {
     const forms = db.get('filledforms').value();
     let substitutions = _.clone(hh.common_substitutions);
