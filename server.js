@@ -159,7 +159,7 @@ const render_add_image = (block) => `
       <input class="more" fieldname="${block.name}" type="button" value="+" />
     </td>
   </tr>
-`;
+  `;
 const render_existing_image = (block, value) => `
   <tr class="onevaluecontainer">
     <td>
@@ -187,7 +187,7 @@ const render_template_image = (block) => `
       </td>
     </tr>
 	</table>
-`;
+  `;
 
 const augment_block = (formcontent) => { return (block) => {
   // deep copy
@@ -294,7 +294,7 @@ const assemble = (db) => { return async (req, res) => {
     if (newexists && formkey != originalformkey)
       throw "cannot store under existing name!";
 
-    // form data that we get as field
+      // form data that we get as field
     const form_blocks_nonfile = form.form_blocks
       .filter( block => (_.has(req.body, block.name) && block.type != 'IMAGE') )
       .map( block => {
@@ -417,7 +417,7 @@ const assemble = (db) => { return async (req, res) => {
           var replacement_parts = [];
           for(let file of formvalue.blocks[block.name]) {
             // copy to target dir and rename for replacement
-              const mapinfo = mime_mapper[file.mimetype];
+            const mapinfo = mime_mapper[file.mimetype];
             const targetname = tmpdir.name + '/' + file.hash + mapinfo.extension;
             const tex_targetname = tmpdir.name + '/' + file.hash;
             fs.copyFileSync(config.upload_directory+'/'+file.hash, targetname);
