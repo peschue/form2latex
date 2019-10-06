@@ -3,6 +3,7 @@
   "realm": "form2latex sample Service",
   "prefix": "/form2latex",
   "upload_directory": "uploads/",
+  "built_pdf_location": "/tmp/builtpdfs/",
   "pdflatexbinary": "/usr/bin/pdflatex",
   "max_upload_per_field": 5,
   "temp_dir_location": "/tmp/",

@@ -63,6 +63,24 @@ const app_logout = (req, res) => {
   res.redirect(config.prefix+'/');
 }
 
+// provide PDF of form (already built)
+const provide_pdf = (db) => { return async (req, res) => {
+	const formtype = req.params.formtype
+	const form = forms[formtype]
+	const formkey = req.params.formkey;
+	let version = req.params.version;
+	console.log(`using formkey ${formkey} and version ${version}`)
+	const pdfinfo = await db.get('filledforms').get(formkey).get('versions').nth(version-1).get('pdf').value()
+	console.log(`got pdf info ${pdfinfo} from DB`)
+	const pdffile = pdfinfo.location
+	const binarypdf = fs.readFileSync(pdffile);
+	const pdfstat = fs.statSync(pdffile);
+	res.setHeader('Content-Length', pdfstat.size);
+	res.setHeader('Content-Type', 'application/pdf');
+	res.setHeader('Content-Disposition', 'attachment; filename='+form.pdf_send_filename);
+	res.send(binarypdf);
+}}
+
 //
 // the form editing
 //
@@ -102,7 +120,7 @@ const edit_form = (db) => { return (req, res) => {
       isDraft = !formcontent.final
       hasPDF = _.has(formcontent,"pdf")
       if (hasPDF)
-        pdflink = formcontent.pdf
+        pdflink = `${config.prefix}/forms/${formtype}/${formkey}/${version}/pdf`
 		} else {
 			// new versions start at 1 and are drafts
 			version = 1
@@ -268,7 +286,7 @@ const form_action = (db) => { return async (req, res) => {
 //
 const save_and_create_pdf = async (db, req, res) => {
 	const formkey = req.params.formkey;
-	const version = req.params.version; // TODO use version below
+	let version = req.params.version;
 	const formtype = req.body.formtype;
 	const form = forms[formtype];
 
@@ -319,24 +337,30 @@ const save_and_create_pdf = async (db, req, res) => {
 		const latestversion = formvalue.versions.length
 		if (formvalue.versions[latestversion-1].final) {
 			// new draft version
+			version = latestversion+1
 			formvalue.versions.append({
-				version: latestversion+1,
+				version: version,
 				final:false,
-				blocks: newblocks
+				blocks: newblocks,
+				pdf: undefined,
 			});
 		} else {
 			// overwrite draft version
-			formvalue.versions[latestversion-1].blocks = newblocks;
+			version = latestversion
+			formvalue.versions[version-1].blocks = newblocks;
+			formvalue.versions[version-1].pdf = undefined; // remove PDF! (we set it again if it was built successfully)
 		}
 	} else {
 		// create completely new record
+		version = 1
 		formvalue = {
 			formtype: formtype,
 			versions: [
 				{
-					version: 1,
+					version: version,
 					final: false,
-					blocks: newblocks
+					blocks: newblocks,
+					pdf: undefined,
 				}
 			]
 		};
@@ -358,19 +382,30 @@ const save_and_create_pdf = async (db, req, res) => {
 	const tmpdir = tempfile.dirSync({ dir: config.temp_dir_location, unsafeCleanup: true })
 	console.log("created temporary directory for assemble: "+tmpdir.name)
 	// do it
-	const pdffile = await hh.assemble_pdf(tmpdir, form, formvalue)
-	const binarypdf = fs.readFileSync(pdffile);
-	const pdfstat = fs.statSync(pdffile);
-	console.log("removing temporary directory "+tmpdir.name);
-	tmpdir.removeCallback();
+	const result = await hh.assemble_pdf(tmpdir, form, formvalue)
+	// if it was successful, save PDF to non-temp location and store link in DB
+	let successmessage = undefined
+	if (result[0] == 'success') {
+		const pdffile = result[1];
+		// move to target location
+		const pdffinallocation = tempfile.tmpNameSync({ dir: config.built_pdf_location, template: 'builtpdfXXXXXX' })
+		console.log("copying PDF to final locaiton "+pdffinallocation);
+		fs.copyFileSync(pdffile, pdffinallocation);
+		console.log("removing temporary directory "+tmpdir.name);
+		tmpdir.removeCallback();
 
+		console.log("storing to DB again");
+		formvalue.versions[version-1].pdf = { location: pdffinallocation }
+		await db.get('filledforms').set(newformkey, formvalue).write()
+
+		successmessage = 'was successful'
+	} else {
+		successmessage = 'failed ('+result[1]+')'
+	}
 	// send reply
-	res.status(200);
-	res.setHeader('Content-Length', pdfstat.size);
-	res.setHeader('Content-Type', 'application/pdf');
-	res.setHeader('Content-Disposition', 'attachment; filename='+form.pdf_send_filename);
-	res.send(binarypdf);
-	res.end();
+	res.status(200)
+	   .send("<html>PDF build "+successmessage+` <a href="${config.prefix}/forms/${formtype}/${newformkey}/${version}/edit">back</a></html>`) // TODO use a proper template here
+	   .end()
 }
 
 const get_formvalue_throw_if_form_key_or_version_bad = (db, formkey, version) => {
@@ -470,6 +505,7 @@ low(lowdb_adapter)
 		app.get(config.prefix + '/logout', app_logout);
 		app.get(config.prefix + '/', auth, formselection.handler(config, db));
 		app.get(config.prefix + '/forms/:formtype/:formkey/:version/edit', auth, edit_form(db));
+		app.get(config.prefix + '/forms/:formtype/:formkey/:version/pdf', auth, provide_pdf(db));
 		app.post(config.prefix + '/forms/:formkey/:version/action', auth, upload.fields(multer_fields), form_action(db));
 
 		return db.defaults({

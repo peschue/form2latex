@@ -151,17 +151,19 @@ exports.assemble_pdf = async (tmpdir, form, formvalue) => {
 	const textemplate = fs.readFileSync(form.tex_template, "utf8");
 	fs.writeFileSync(texfile, mustache.render("{{=<% %>=}}"+textemplate, replacements), encoding='utf-8');
 
+	let exitcode = undefined;
 	for(var i in [1, 2]) {
 		console.log(`building tex file ${texfile} (pass ${i})`);
 		const child = child_process.spawn(config.pdflatexbinary, [ texfile ], { cwd: tmpdir.name, stdio: ['ignore', process.stderr, process.stderr ] });
 
 		// wait for child in a non-blocking way
-		let exitcode = undefined;
 		child.on('exit', (code) => { exitcode = code; });
 		while( exitcode === undefined ) await sleep(100);
 		child.kill();
 		console.log('pdflatex terminated with exit code '+exitcode);
+		if (exitcode != 0)
+			return ['failure', exitcode]
 	}
 	const pdffile = tmpdir.name + '/' + form.tex_targetbase + '.pdf';
-	return pdffile
+	return ['success', pdffile]
 }
