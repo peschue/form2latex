@@ -11,7 +11,7 @@ const tempfile = require('tmp');
 
 const hh = require("./helpers.js")
 const config = hh.config
-
+const { forms } = require(config.forms_spec);
 //
 // entry point to form actions
 //
@@ -37,8 +37,8 @@ exports.handler = (db) => { return async (req, res) => {
 
 // saving and creating a PDF
 const save_and_create_pdf = async (db, req, res) => {
-	const formkey = req.params.formkey;
-	let version = req.params.version;
+	const oldformkey = req.params.formkey;
+	const version = req.params.version;
 	const formtype = req.body.formtype;
 	const form = forms[formtype];
 
@@ -53,12 +53,11 @@ const save_and_create_pdf = async (db, req, res) => {
 
 	// checkout if we rename into an existing name
 	const newformkey = req.body.formkey;
-	if (newformkey == 'new')
-		throw "cannot store name 'new'!";
-	const originalexists = db.get('filledforms').has(formkey).value();
+	const originalexists = db.get('filledforms').has(oldformkey).value();
 	const newexists = db.get('filledforms').has(newformkey).value();
 	console.log('originalexists', originalexists);
-	if (newexists && formkey != newformkey)
+	if (newexists && oldformkey != newformkey)
+		// TODO make uniform error handling
 		throw "cannot store under existing name!";
 		
 	// form data that we get as field
@@ -83,52 +82,24 @@ const save_and_create_pdf = async (db, req, res) => {
 	// get everything from db and insert/overwrite draft version
 	let formvalue = undefined;
 	const newblocks = _.object(form_blocks_nonfile.concat(form_blocks_file));
-	if (originalexists) {
-		// overwrite draft version / insert draft version
-		formvalue = db.get('filledforms').get(formkey).value();
-		const latestversion = formvalue.versions.length
-		if (formvalue.versions[latestversion-1].final) {
-			// new draft version
-			version = latestversion+1
-			formvalue.versions.append({
-				version: version,
-				final:false,
-				blocks: newblocks,
-				pdf: undefined,
-			});
-		} else {
-			// overwrite draft version
-			version = latestversion
-			formvalue.versions[version-1].blocks = newblocks;
-			formvalue.versions[version-1].pdf = undefined; // remove PDF! (we set it again if it was built successfully)
-		}
-	} else {
-		// create completely new record
-		version = 1
-		formvalue = {
-			formtype: formtype,
-			versions: [
-				{
-					version: version,
-					final: false,
-					blocks: newblocks,
-					pdf: undefined,
-				}
-			]
-		};
-	}
+	// overwrite draft version
+	formvalue = db.get('filledforms').get(oldformkey).value();
+	formvalue.versions[version-1].blocks = newblocks;
+	formvalue.versions[version-1].pdf = undefined; // remove PDF! (we set it again if it was built successfully)
 	console.log('formvalue', formvalue);
 
 	// save `formvalue` to DB
-	if (!originalexists || formkey == newformkey) {
+	if (!originalexists || oldformkey == newformkey) {
 		// update by setting again
 		console.info('storing under key',newformkey)
 		await db.get('filledforms').set(newformkey, formvalue).write()
 	} else {
 		// delete old and insert new
-		console.info('deleting key',formkey,'and storing key',newformkey)
-		await db.get('filledforms').unset(formkey).set(newformkey, formvalue).write()
+		console.info('deleting key',oldformkey,'and storing key',newformkey)
+		await db.get('filledforms').unset(oldformkey).set(newformkey, formvalue).write()
 	}
+
+	const formkey = newformkey;
 
 	// assemble PDF
 	const tmpdir = tempfile.dirSync({ dir: config.temp_dir_location, unsafeCleanup: true })
@@ -148,7 +119,7 @@ const save_and_create_pdf = async (db, req, res) => {
 
 		console.log("storing to DB again");
 		formvalue.versions[version-1].pdf = { location: pdffinallocation }
-		await db.get('filledforms').set(newformkey, formvalue).write()
+		await db.get('filledforms').set(formkey, formvalue).write()
 
 		successmessage = 'was successful'
 	} else {
@@ -156,7 +127,7 @@ const save_and_create_pdf = async (db, req, res) => {
 	}
 	// send reply
 	res.status(200)
-		.send("<html>PDF build "+successmessage+` <a href="${config.prefix}/forms/${formtype}/${newformkey}/${version}/edit">back</a></html>`) // TODO use a proper template here
+		.send("<html>PDF build "+successmessage+` <a href="${config.prefix}/forms/${formtype}/${formkey}/${version}/edit">back</a></html>`) // TODO use a proper template here
 		.end()
 }
 
@@ -221,6 +192,5 @@ const draft_from_this = async (db, req, res) => {
 
 	// append version
 	await db.get('filledforms').get(formkey).get('versions').push(newversion).write()
-	res.redirect(config.prefix);
-	res.end()
+	res.redirect(config.prefix).end()
 }

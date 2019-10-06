@@ -21,6 +21,7 @@ const { forms } = require(config.forms_spec);
 const edit_form = require('./edit_form.js')
 const form_selection = require('./formselection.js')
 const form_action = require('./formaction.js')
+const form_create = require('./form_create.js')
 
 const preloaded = {
 	login: fs.readFileSync("templates/login.mustache", "utf8"),
@@ -111,6 +112,7 @@ low(lowdb_adapter)
 		app.get(config.prefix + '/', auth, form_selection.handler(db));
 		app.get(config.prefix + '/login', app_login);
 		app.get(config.prefix + '/logout', app_logout);
+		app.get(config.prefix + '/forms/:formtype/create', auth, form_create.handler(db));
 		app.get(config.prefix + '/forms/:formtype/:formkey/:version/pdf', auth, provide_pdf(db));
 		app.get(config.prefix + '/forms/:formtype/:formkey/:version/edit', auth, edit_form.handler(db));
 		app.post(config.prefix + '/forms/:formkey/:version/action', auth, upload.fields(multer_fields), form_action.handler(db));
