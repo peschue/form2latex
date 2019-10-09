@@ -19,9 +19,10 @@ const preloaded = {
 
 // tablerow
 const render_tablerow_general = (block, trclass, value) => `
-	<tr class='${trclass}'>
-		<td><textarea name="${block.name}" rows="1" cols="${block.cols}">${value}</textarea></td>
-		<td><input class="more" fieldname="${block.name}" type="button" value="+" /></td>
+	<tr class="${trclass} onevaluecontainer">
+		<td><textarea class="disable_for_readonly" name="${block.name}" rows="1" cols="${block.cols}">${value}</textarea></td>
+		<td><input class="disable_for_readonly delete" type="button" value="-" /></td>
+		<td><input class="more disable_for_readonly" fieldname="${block.name}" type="button" value="+" /></td>
 	</tr>
 `;
 const render_template_tablerow = (block) => `
@@ -35,21 +36,21 @@ const render_existing_tablerow = (block, value) => render_tablerow_general(block
 const render_add_image = (block) => `
 	<tr class="onevaluecontainer">
 	<td>
-		<input class="more" fieldname="${block.name}" type="button" value="+" />
+		<input class="disable_for_readonly more" fieldname="${block.name}" type="button" value="+" />
 	</td>
 	</tr>
 	`;
 const render_existing_image = (block, value) => `
 	<tr class="onevaluecontainer">
 	<td>
-		<input type="hidden" name="${block.name}" value="existing_file" />
+		<input class="disable_for_readonly" type="hidden" name="${block.name}" value="existing_file" />
 		<input type="hidden" name="${block.name}_HASH" value="${value.hash}" />
 		<input type="hidden" name="${block.name}_FILENAME" value="${value.filename}" />
 		<input type="hidden" name="${block.name}_MIMETYPE" value="${value.mimetype}" />
 		File "${value.filename}"
 	</td>
 	<td>
-		<input class="delete" type="button" value="-" />
+		<input class="disable_for_readonly delete" type="button" value="-" />
 	</td>
 	</tr>
 	`;
@@ -85,7 +86,7 @@ const augment_block = (formcontent) => { return (block) => {
 	switch (block.type) {
 		case 'TEXT':
 			block.template = '';
-			block.control = `<textarea name="${block.name}" rows="${block.rows}" cols="${block.cols}">\n${block.value}\n</textarea>`;
+			block.control = `<textarea class="disable_for_readonly" name="${block.name}" rows="${block.rows}" cols="${block.cols}">\n${block.value}\n</textarea>`;
 			break;
 		case 'TABLEROW':
 			if (block.repeat == 'yes') {
@@ -101,7 +102,7 @@ const augment_block = (formcontent) => { return (block) => {
 			} else {
 				block.template = '';
 				// TODO render_single_tablerow
-				block.control = `<textarea name="${block.name}" rows="1" cols="${block.cols}">\n${block.value}\n</textarea>`;
+				block.control = `<textarea class="disable_for_readonly" name="${block.name}" rows="1" cols="${block.cols}">\n${block.value}\n</textarea>`;
 			}
 			break;
 		case 'IMAGE':

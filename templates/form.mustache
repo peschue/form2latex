@@ -25,12 +25,21 @@ Copyright (c) 2019 Peter Schüller
 
     function install() {
 
-			// on click to .more, get fieldname from attribute and clone corresponding template after container of element with button
-			$(".more").click(function() {
-				let name = $(this).attr('fieldname');
-				let template = $("#template-"+name).find('.tocopy');
-				$(this).closest('.onevaluecontainer').after(template.clone(true));
-			});
+      if ({{isDraft}}) {
+        // on click to .more, get fieldname from attribute and clone corresponding template after container of element with button
+        $(".more").click(function() {
+          let name = $(this).attr('fieldname');
+          let template = $("#template-"+name).find('.tocopy');
+          $(this).closest('.onevaluecontainer').after(template.clone(true));
+        });
+        // on click to .delete, remove first onevaluecontainer parent
+        $(".delete").click(function() {
+          $(this).closest('.onevaluecontainer').remove();
+        });
+      } else {
+        $(".disable_for_readonly").attr('disabled', 'disabled');
+        $(".disable_for_readonly").attr('readOnly', 'readonly');
+      }
 		}
 
     $(document).ready(install);
