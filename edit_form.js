@@ -81,6 +81,7 @@ const augment_block = (formcontent) => { return (block) => {
 		block.value = block.defaultvalue
 	}
 	// TODO manage missing default value if not image (we want defaults for all but not for images)
+	// TODO use mustache for these templates
 
 	// extend with HTML
 	switch (block.type) {

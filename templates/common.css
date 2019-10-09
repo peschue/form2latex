@@ -3,6 +3,12 @@ p.header {
   border-top:solid;
 }
 
+.header .comment {
+  margin-left: 1cm;
+  font-size: 80%;
+  font-weight: normal;
+}
+
 input.more {
   background-color:green;
   color:white;

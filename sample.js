@@ -11,6 +11,7 @@ const forms = {
         rows: 1,
         cols: 40,
         defaultvalue: 'Test Title',
+        htmlcomment: 'This is an explanation for the <i>very important</i> field!'
       },
       {
         name: 'TESTTABLEROW',
@@ -24,6 +25,7 @@ const forms = {
         type: 'IMAGE',
         repeat: 'yes',
         defaultvalue: [],
+        htmlcomment: 'This is just an image, or more than one.'
       },
     ],
   },
