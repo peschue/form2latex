@@ -105,7 +105,7 @@ const save_and_create_pdf = async (db, req, res) => {
 	const tmpdir = tempfile.dirSync({ dir: config.temp_dir_location, unsafeCleanup: true })
 	console.log("created temporary directory for assemble: "+tmpdir.name)
 	// do it
-	const result = await hh.assemble_pdf(tmpdir, form, formvalue)
+	const result = await hh.assemble_pdf(tmpdir, form, formvalue.versions[version-1])
 	// if it was successful, save PDF to non-temp location and store link in DB
 	let successmessage = undefined
 	if (result[0] == 'success') {
