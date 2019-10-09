@@ -162,6 +162,7 @@ exports.handler = (db) => { return (req, res) => {
 		_.extend(substitutions, {
 			formkey: formkey,
 			formtype: formtype,
+			formhtmlcomment: formspec.htmlcomment,
 			version: version,
 			basedOnVersion: formcontent.based_on_version,
 			isDraft: isDraft,

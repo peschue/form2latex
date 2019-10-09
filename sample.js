@@ -2,6 +2,7 @@ const forms = {
   'FormType1': {
     tex_template: 'templates/sample.mustache.tex',
     tex_targetbase: 'type1',
+    htmlcomment: 'comment to form type',
     form_blocks: [
       {
         name: 'TESTTITLE',

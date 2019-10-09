@@ -56,13 +56,14 @@ Copyright (c) 2019 Peter Schüller
 
   <form action="{{{prefix}}}/forms/{{formkey}}/{{version}}/action" method="post" enctype="multipart/form-data">
   <p>
-    <b>Content Name:</b>
+    <b>Name:</b>
     <input type="text" name="formkey" value="{{formkey}}"/>
     Version:
     <b>v{{version}}{{#isDraft}}-Draft{{/isDraft}}</b>
 		{{#basedOnVersion}}
 		(based on version <a href="{{{prefix}}}/forms/{{formtype}}/{{formkey}}/{{basedOnVersion}}/edit">v{{basedOnVersion}}</a>)
 		{{/basedOnVersion}}
+    {{#formhtmlcomment}}<p class="comment">{{{formhtmlcomment}}}</p>{{/formhtmlcomment}}
   </p>
   <input type="hidden" name="formtype" value="{{formtype}}"/>
   {{#blocks}}
