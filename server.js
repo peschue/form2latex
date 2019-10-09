@@ -77,7 +77,7 @@ const provide_pdf = (db) => { return async (req, res) => {
 	const pdfstat = fs.statSync(pdffile);
 	res.setHeader('Content-Length', pdfstat.size);
 	res.setHeader('Content-Type', 'application/pdf');
-	res.setHeader('Content-Disposition', 'attachment; filename='+form.pdf_send_filename);
+	res.setHeader('Content-Disposition', 'attachment; filename='+formkey+'_v'+version+'.pdf');
 	res.send(binarypdf);
 }}
 
