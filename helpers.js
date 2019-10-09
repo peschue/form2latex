@@ -120,7 +120,12 @@ exports.interpret_file_formdata = (blocks, req_body, req_files, errors) => {
 
 exports.assemble_pdf = async (tmpdir, form, formvalue) => {
 	// interpret `formvalue` as PDF replacements
-	var replacements = {};
+	var replacements = {
+		'VERSION': formvalue.version,
+	}
+	if (_.has(formvalue, 'based_on_version')) {
+		replacements['BASED_ON_VERSION'] = formvalue['based_on_version'];
+	}
 	for(let block of form.form_blocks) {
 		if (block.type == 'IMAGE' ) {
 			if ( _.has(formvalue.blocks, block.name) ) {

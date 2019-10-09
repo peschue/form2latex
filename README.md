@@ -21,6 +21,11 @@ Each content block can be filled with value(s) and is rendered in a LaTeX templa
 The latex template is a mustache template and contains the following placeholders
 for form content:
 
+* Builtin fields are non-repeatable TEXT blocks with name
+
+  - VERSION
+  - BASED_ON_VERSION
+
 * Non-repeatable TEXT blocks can be rendered by
 
   `<% & <BLOCKNAME> %>`
