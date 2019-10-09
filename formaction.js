@@ -112,7 +112,7 @@ const save_and_create_pdf = async (db, req, res) => {
 		const pdffile = result[1];
 		// move to target location
 		const pdffinallocation = tempfile.tmpNameSync({ dir: config.built_pdf_location, template: 'builtpdfXXXXXX' })
-		console.log("copying PDF to final locaiton "+pdffinallocation);
+		console.log("copying PDF to final location "+pdffinallocation);
 		fs.copyFileSync(pdffile, pdffinallocation);
 		console.log("removing temporary directory "+tmpdir.name);
 		tmpdir.removeCallback();
