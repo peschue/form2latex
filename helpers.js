@@ -143,11 +143,13 @@ exports.assemble_pdf = async (tmpdir, form, formvalue) => {
 			}
 		} else if (block.type == 'TEXT' || block.type == 'TABLEROW') {
 			if (_.has(formvalue.blocks, block.name)) {
-				const content = formvalue.blocks[block.name];
+				let content = formvalue.blocks[block.name];
 				if (block.repeat == 'yes')  {
 					if (Array.isArray(content)) {
 						replacements[block.name] = content.map( (text) => ({ TEXT: text }) );
 					} else {
+						if (block.trim == true)
+							content = content.trim();
 						replacements[block.name] = [ { TEXT: content } ];
 					}
 				} else
