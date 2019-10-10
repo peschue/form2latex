@@ -93,6 +93,8 @@ const augment_block = (formcontent) => { return (block) => {
 			if (block.repeat == 'yes') {
 				block.template = render_template_tablerow(block);
 				let values = block.value;
+				if (values == undefined)
+					values = [];
 				if (values.length == 0)
 					// add an empty one (so that we have at least one)
 					values.push('');
@@ -109,9 +111,12 @@ const augment_block = (formcontent) => { return (block) => {
 		case 'IMAGE':
 			if (block.repeat == 'yes') {
 				block.template = render_template_image(block);
+				let values = block.value;
+				if (values == undefined)
+					values = [];
 				block.control =
 					'<table border="0">' +
-					block.value.map((val) => render_existing_image(block, val)).join('\n') +
+					values.map((val) => render_existing_image(block, val)).join('\n') +
 					render_add_image(block) +
 					'</table>';
 			} else {
