@@ -102,6 +102,7 @@ const save_and_create_pdf = async (db, req, res) => {
 	const formkey = newformkey;
 
 	// assemble PDF
+	//const tmpdir = { name:'/tmp/', removeCallback: () => {} }
 	const tmpdir = tempfile.dirSync({ dir: config.temp_dir_location, unsafeCleanup: true })
 	console.log("created temporary directory for assemble: "+tmpdir.name)
 	// do it
