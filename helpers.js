@@ -182,19 +182,59 @@ exports.assemble_pdf = async (tmpdir, form, formvalue) => {
 	return ['success', pdffile]
 }
 
+exports.get_all_image_hashes = (form_blocks, blocks) => {
+	const image_formblock_names = form_blocks
+		.filter( (fb) => fb.type == 'IMAGE' )
+		.map( (fb) => fb.name );
+	//console.log('get_all_image_hashes got formblock names '+image_formblock_names+' and blocks '+blocks)
+	let oldimagehashes = [];
+	for(const blockname of image_formblock_names) {
+		if( _.has(blocks, blockname) ) {
+			for(const imgobj of blocks[blockname]) {
+				oldimagehashes.push(imgobj.hash);
+			}
+		}
+	}
+	//console.log('get_all_image_hashes returning '+oldimagehashes)
+	return oldimagehashes;
+}
+
 exports.remove_pdf_if_not_in_db = async (db, pdflocation) => {
+	if (pdflocation == undefined)
+		return;
 	const forms = await db.get('filledforms').value();
 	for(const formkey in forms) {
 		const form = forms[formkey]
 		for(const version of form.versions) {
 			//console.log('checking version '+version.version+' of form '+formkey)
-			if( version.pdf && version.pdf.location == pdflocation ) {
+			if( version.pdf != undefined && version.pdf.location == pdflocation ) {
 				//console.log('found!')
-				return
+				return;
 			}
 		}
 	}
 	// did not return -> remove
 	console.log('removing '+pdflocation)
 	fs.unlinkSync(pdflocation)
+}
+
+exports.remove_imagefile_if_not_in_db = async (db, imagehash) => {
+	const forms = await db.get('filledforms').value();
+	for(const formkey in forms) {
+		const form = forms[formkey]
+		for(const version of form.versions) {
+			for(const block of _.values(version.blocks)) {
+				const check = (blockobject) => blockobject.hash == imagehash;
+				if( _.isArray(block) ) {
+					if( _.some(block, check) ) return;
+				} else {
+					if( check(block) ) return;
+				}
+			}
+		}
+	}
+	// did not return -> remove
+	const full_image_path = config.upload_directory+'/'+imagehash
+	console.log('removing unreferenced image file '+full_image_path)
+	fs.unlinkSync(full_image_path)
 }

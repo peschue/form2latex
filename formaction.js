@@ -84,9 +84,14 @@ const save_and_create_pdf = async (db, req, res) => {
 	const newblocks = _.object(form_blocks_nonfile.concat(form_blocks_file));
 	// overwrite draft version
 	formvalue = db.get('filledforms').get(oldformkey).value();
+	const old_image_hashes = hh.get_all_image_hashes(form.form_blocks, formvalue.versions[version-1].blocks);
 	formvalue.versions[version-1].blocks = newblocks;
 
-	const original_pdf = formvalue.versions[version-1].pdf.location
+	// save original PDF (to delete the file later, if no other version uses it)
+	let original_pdf = undefined;
+	if (formvalue.versions[version-1].pdf)
+		original_pdf = formvalue.versions[version-1].pdf.location;
+
 	formvalue.versions[version-1].pdf = undefined; // remove PDF! (we set it again if it was built successfully)
 
 	//console.log('formvalue', formvalue);
@@ -101,6 +106,11 @@ const save_and_create_pdf = async (db, req, res) => {
 		console.info('deleting key',oldformkey,'and storing key',newformkey)
 		await db.get('filledforms').unset(oldformkey).set(newformkey, formvalue).write()
 	}
+
+	// delete images that were deleted from form
+	console.log('got image hashes to check: '+old_image_hashes)
+	for(const hash of old_image_hashes)
+		hh.remove_imagefile_if_not_in_db(db, hash);
 
 	const formkey = newformkey;
 
