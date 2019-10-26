@@ -47,7 +47,7 @@ exports.normalize_newlines = (obj) => {
 				return [kv[0], kv[1].replace(/(\r\n)+/g, '\n')]
 		})
 	)
-	console.debug('after normalizing newlines:', obj)
+	//console.debug('after normalizing newlines:', obj)
 	return ret
 }
 
@@ -96,7 +96,7 @@ exports.interpret_file_formdata = (blocks, req_body, req_files, errors) => {
 				} else if (existing_or_new[i] == 'new_file') {
 					// new file was uploaded, use multer fields
 					const file = req_files[block.name + '_FILE'][new_idx]
-					console.log("handling file", file);
+					//console.log("handling file", file);
 					if (!_.has(mime_mapper, file.mimetype)) {
 						errors.push(`received file ${file.originalname} with unprocessable mime type ${file.mimetype} (can handle {${_.keys(mime_mapper).join(';')}})`);
 					} else {
@@ -159,7 +159,7 @@ exports.assemble_pdf = async (tmpdir, form, formvalue) => {
 			console.log("block type "+block.type);
 		}
 	}
-	console.log("replacements", replacements);
+	//console.log("replacements", replacements);
 
 	const texfile = tmpdir.name + '/' + form.tex_targetbase+'.tex';
 	const textemplate = fs.readFileSync(form.tex_template, "utf8");

@@ -42,9 +42,9 @@ const save_and_create_pdf = async (db, req, res) => {
 	const formtype = req.body.formtype;
 	const form = forms[formtype];
 
-	console.log("assemble for fields", _.keys(req.body).join(' '), "and files", _.keys(req.files).join(' '));
-	console.debug('req.body', req.body);
-	console.debug('req.files', req.files);
+	//console.log("assemble for fields", _.keys(req.body).join(' '), "and files", _.keys(req.files).join(' '));
+	//console.debug('req.body', req.body);
+	//console.debug('req.files', req.files);
 	req.body = hh.normalize_newlines(req.body)
 
 	//
@@ -55,11 +55,11 @@ const save_and_create_pdf = async (db, req, res) => {
 	const newformkey = req.body.formkey;
 	const originalexists = db.get('filledforms').has(oldformkey).value();
 	const newexists = db.get('filledforms').has(newformkey).value();
-	console.log('originalexists', originalexists);
+	//console.log('originalexists', originalexists);
 	if (newexists && oldformkey != newformkey)
 		// TODO make uniform error handling
 		throw "cannot store under existing name!";
-		
+
 	// form data that we get as field
 	const form_blocks_nonfile = form.form_blocks
 		.filter( block => (_.has(req.body, block.name) && block.type != 'IMAGE') )
@@ -89,7 +89,7 @@ const save_and_create_pdf = async (db, req, res) => {
 	const original_pdf = formvalue.versions[version-1].pdf.location
 	formvalue.versions[version-1].pdf = undefined; // remove PDF! (we set it again if it was built successfully)
 
-	console.log('formvalue', formvalue);
+	//console.log('formvalue', formvalue);
 
 	// save `formvalue` to DB
 	if (!originalexists || oldformkey == newformkey) {
