@@ -28,7 +28,7 @@ exports.handler = (db) => { return async (req, res) => {
 			return await draft_from_this(db, req, res)
 		}
 	} catch(except) {
-		const msg = "exception during form action: "+new Date()+'\n\n'+except;
+		const msg = "exception during form action: "+new Date()+'\n\n'+except+'\n'+except.stack;
 		console.error(msg);
 		res.status(500);
 		res.end(msg);
