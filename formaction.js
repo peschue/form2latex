@@ -104,7 +104,9 @@ const save_and_create_pdf = async (db, req, res) => {
 	} else {
 		// delete old and insert new
 		console.info('deleting key',oldformkey,'and storing key',newformkey)
-		await db.get('filledforms').unset(oldformkey).set(newformkey, formvalue).write()
+		await db.get('filledforms').unset(oldformkey).write()
+		await db.get('filledforms').set(newformkey, formvalue).write()
+		
 	}
 
 	// delete images that were deleted from form
