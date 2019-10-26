@@ -181,3 +181,20 @@ exports.assemble_pdf = async (tmpdir, form, formvalue) => {
 	const pdffile = tmpdir.name + '/' + form.tex_targetbase + '.pdf';
 	return ['success', pdffile]
 }
+
+exports.remove_pdf_if_not_in_db = async (db, pdflocation) => {
+	const forms = await db.get('filledforms').value();
+	for(const formkey in forms) {
+		const form = forms[formkey]
+		for(const version of form.versions) {
+			//console.log('checking version '+version.version+' of form '+formkey)
+			if( version.pdf && version.pdf.location == pdflocation ) {
+				//console.log('found!')
+				return
+			}
+		}
+	}
+	// did not return -> remove
+	console.log('removing '+pdflocation)
+	fs.unlinkSync(pdflocation)
+}

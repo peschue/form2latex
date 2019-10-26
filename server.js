@@ -69,9 +69,9 @@ const provide_pdf = (db) => { return async (req, res) => {
 	const form = forms[formtype]
 	const formkey = req.params.formkey;
 	let version = req.params.version;
-	console.log(`using formkey ${formkey} and version ${version}`)
+	//console.log(`using formkey ${formkey} and version ${version}`)
 	const pdfinfo = await db.get('filledforms').get(formkey).get('versions').nth(version-1).get('pdf').value()
-	console.log(`got pdf info ${pdfinfo} from DB`)
+	//console.log(`got pdf info ${pdfinfo} from DB`)
 	const pdffile = pdfinfo.location
 	const binarypdf = fs.readFileSync(pdffile);
 	const pdfstat = fs.statSync(pdffile);

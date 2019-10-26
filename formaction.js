@@ -85,7 +85,10 @@ const save_and_create_pdf = async (db, req, res) => {
 	// overwrite draft version
 	formvalue = db.get('filledforms').get(oldformkey).value();
 	formvalue.versions[version-1].blocks = newblocks;
+
+	const original_pdf = formvalue.versions[version-1].pdf.location
 	formvalue.versions[version-1].pdf = undefined; // remove PDF! (we set it again if it was built successfully)
+
 	console.log('formvalue', formvalue);
 
 	// save `formvalue` to DB
@@ -118,9 +121,12 @@ const save_and_create_pdf = async (db, req, res) => {
 		console.log("removing temporary directory "+tmpdir.name);
 		tmpdir.removeCallback();
 
-		console.log("storing to DB again");
+		console.log("storing to DB")
 		formvalue.versions[version-1].pdf = { location: pdffinallocation }
 		await db.get('filledforms').set(formkey, formvalue).write()
+
+		console.log("potentially removing original PDF "+original_pdf+" that is replaced by newly built PDF")
+		hh.remove_pdf_if_not_in_db(db, original_pdf) // no await here
 
 		successmessage = 'was successful'
 	} else {
@@ -161,6 +167,9 @@ const delete_draft = async (db, req, res) => {
 	const formkey = req.params.formkey
 	const version = req.params.version
 	const formvalue = get_formvalue_throw_if_form_key_or_version_bad(db, formkey, version)
+	let original_pdf = undefined;
+	if (formvalue.versions[version-1].pdf)
+		original_pdf = formvalue.versions[version-1].pdf.location;
 
 	if (formvalue.versions[version-1].final)
 		throw "version "+version+" of form key "+formkey+" is final and cannot be deleted"
@@ -171,6 +180,11 @@ const delete_draft = async (db, req, res) => {
 		// delete only the one version
 		const ret = await db.get('filledforms').get(formkey).get('versions').pullAt(version-1).write()
 	}
+
+	// delete PDF if not referenced
+	if( original_pdf )
+		hh.remove_pdf_if_not_in_db(db, original_pdf);
+
 	res.redirect(config.prefix);
 	res.end()
 }
