@@ -169,7 +169,7 @@ const finalize_version = async (db, req, res) => {
 
 	// set final
 	await db.get('filledforms').get(formkey).get('versions').nth(version-1).set('final',true).write()
-	res.redirect(config.prefix);
+	res.redirect(config.prefix+'/');
 	res.end()
 }
 
@@ -195,7 +195,7 @@ const delete_draft = async (db, req, res) => {
 	if( original_pdf )
 		hh.remove_pdf_if_not_in_db(db, original_pdf);
 
-	res.redirect(config.prefix);
+	res.redirect(config.prefix+'/');
 	res.end()
 }
 
@@ -217,6 +217,6 @@ const draft_from_this = async (db, req, res) => {
 
 	// append version
 	await db.get('filledforms').get(formkey).get('versions').push(newversion).write()
-	res.redirect(config.prefix)
+	res.redirect(config.prefix+'/')
 	res.end()
 }
