@@ -38,7 +38,7 @@ exports.handler = (db) => { return async (req, res) => {
 			]
 		}
 		await db.get('filledforms').set(newname, formvalue).write()
-		res.redirect(config.prefix)
+		res.redirect(config.prefix+'/')
 		res.end()
 	}
 }}
