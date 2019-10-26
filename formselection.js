@@ -11,6 +11,7 @@ const mustache = require("mustache")
 
 const hh = require("./helpers.js")
 const config = hh.config
+const { forms } = require(config.forms_spec)
 
 const preloaded = {
   formselection: fs.readFileSync("templates/formselection.mustache", "utf8"),
@@ -21,13 +22,14 @@ const preloaded = {
 //
 exports.handler = (db) => { return (req, res) => {
   try {
-    const forms = db.get('filledforms').value();
+    const filledforms = db.get('filledforms').value();
     let substitutions = _.clone(hh.common_substitutions);
     _.extend(substitutions, {
       commoncss: '',
       commonjs: '',
       newformtype: config.newformtype,
-			forms: _.pairs(forms)
+      htmlcomment: forms[config.newformtype].htmlcomment,
+			forms: _.pairs(filledforms)
 				.map( (kv) => ({
 					formkey: kv[0],
 					formtype: kv[1].formtype,

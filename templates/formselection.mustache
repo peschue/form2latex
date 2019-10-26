@@ -37,7 +37,7 @@ Copyright (c) 2019 Peter Schüller
   <h2>Create New Form</h2>
 
   <form action="{{{prefix}}}/forms/{{newformtype}}/create" method="get">
-  <p>Name: <input type="text" name="name" /></p>
+  <p>Name: <input type="text" name="name" /> <span class="comment">{{htmlcomment}}</span></p>
   <p><input type="submit" name="submit" value="Create new document of type {{newformtype}}" /></p>
   </form>
 

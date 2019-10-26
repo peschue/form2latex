@@ -3,10 +3,13 @@ p.header {
   border-top:solid;
 }
 
-.header .comment {
-  margin-left: 1cm;
+.comment {
   font-size: 80%;
   font-weight: normal;
+}
+
+.header .comment {
+  margin-left: 1cm;
 }
 
 input.more {
