@@ -207,5 +207,6 @@ const draft_from_this = async (db, req, res) => {
 
 	// append version
 	await db.get('filledforms').get(formkey).get('versions').push(newversion).write()
-	res.redirect(config.prefix).end()
+	res.redirect(config.prefix)
+	res.end()
 }
