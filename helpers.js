@@ -94,19 +94,22 @@ exports.interpret_file_formdata = (blocks, req_body, req_files, errors) => {
 					})
 					existing_idx++;
 				} else if (existing_or_new[i] == 'new_file') {
+					//console.log('req_files for block %s is %s', block.name, req_files[block.name + '_FILE']);
 					// new file was uploaded, use multer fields
-					const file = req_files[block.name + '_FILE'][new_idx]
-					//console.log("handling file", file);
-					if (!_.has(mime_mapper, file.mimetype)) {
-						errors.push(`received file ${file.originalname} with unprocessable mime type ${file.mimetype} (can handle {${_.keys(mime_mapper).join(';')}})`);
-					} else {
-						collected.push({
-							filename: file.originalname,
-							hash: file.filename,
-							mimetype: file.mimetype
-						})
+					if (req_files[block.name + '_FILE'] != undefined && req_files[block.name + '_FILE'][new_idx] != undefined ) {
+						const file = req_files[block.name + '_FILE'][new_idx]
+						//console.log("handling file", file);
+						if (!_.has(mime_mapper, file.mimetype)) {
+							errors.push(`received file ${file.originalname} with unprocessable mime type ${file.mimetype} (can handle {${_.keys(mime_mapper).join(';')}})`);
+						} else {
+							collected.push({
+								filename: file.originalname,
+								hash: file.filename,
+								mimetype: file.mimetype
+							})
+						}
+						new_idx++;
 					}
-					new_idx++;
 				} else {
 					console.error("got invalid content for existing_or_new: %s", existing_or_new[i]);
 				}
