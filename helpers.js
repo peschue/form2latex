@@ -177,6 +177,7 @@ exports.assemble_pdf = async (tmpdir, form, formvalue) => {
 		console.log('pdflatex terminated with exit code '+exitcode);
 		if (exitcode != 0)
 			return ['failure', exitcode]
+		exitcode = undefined;
 	}
 	const pdffile = tmpdir.name + '/' + form.tex_targetbase + '.pdf';
 	return ['success', pdffile]
