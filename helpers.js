@@ -12,6 +12,7 @@ const mustache = require("mustache");
 
 const configFile = process.env.CONFIG || "configs/config_local.json"
 const config = JSON.parse(fs.readFileSync(configFile, "utf-8"));
+const packagejson = JSON.parse(fs.readFileSync("package.json", "utf-8"));
 
 exports.config = config
 
@@ -32,7 +33,8 @@ exports.common_substitutions = {
   commoncss: fs.readFileSync("templates/common.css", "utf8"),
   commonjs: fs.readFileSync("templates/common.js", "utf8"),
   prefix: config.prefix,
-  site_title: config.site_title,
+  site_title: config.site_title + ' v'+packagejson.version,
+  appversion: 'v'+packagejson.version,
   showlogout: _.has(config, 'users'),
 }
 
