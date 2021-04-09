@@ -158,7 +158,7 @@ exports.handler = (db) => { return (req, res) => {
 
 		// check if the used version is a draft version
 		isDraft = !formcontent.final
-		hasPDF = _.has(formcontent, "pdf")
+		hasPDF = _.has(formcontent, "pdf") && formcontent['pdf'] != undefined
 		if (hasPDF)
 			pdflink = `${config.prefix}/forms/${formtype}/${formkey}/${version}/pdf`
 
