@@ -53,6 +53,8 @@ exports.normalize_newlines = (obj) => {
 
 const mime_mapper = {
 	'image/png': { extension: '.png' },
+	'image/jpeg': { extension: '.jpg' },
+	'image/jpeg': { extension: '.jpeg' },
 	'application/pdf': { extension: '.pdf' },
 };
 
