@@ -29,15 +29,15 @@ exports.handler = (db) => { return (req, res) => {
       commonjs: '',
       newformtype: config.newformtype,
       htmlcomment: forms[config.newformtype].htmlcomment,
-			forms: _.pairs(filledforms)
-				.map( (kv) => ({
-					formkey: kv[0],
-					formtype: kv[1].formtype,
-					versions: kv[1].versions.map( (v) => ({
-						version: v.version,
-						isDraft: !v.final
-					}) )
-				}) ),
+      forms: _.pairs(filledforms)
+        .map( (kv) => ({
+          formkey: kv[0],
+          formtype: kv[1].formtype,
+          versions: kv[1].versions.map( (v) => ({
+            version: v.version,
+            isDraft: !v.final
+          }) )
+        }) ),
     });
     //console.log(substitutions.forms);
     res.contentType("html");
