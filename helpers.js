@@ -33,6 +33,7 @@ exports.common_substitutions = {
   commonjs: fs.readFileSync("templates/common.js", "utf8"),
   prefix: config.prefix,
   site_title: config.site_title,
+  showlogout: _.has(config, 'users'),
 }
 
 // replace \r\n by \n

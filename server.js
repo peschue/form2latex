@@ -28,16 +28,22 @@ const preloaded = {
 };
 
 const auth = (req, res, next) => {
-	if (req.session && req.session.logged_in !== undefined)
+	if (!_.has(config, 'users')) {
 		return next();
-	else
-		return res.redirect(config.prefix+'/login');
+	} else {
+		if (req.session && req.session.logged_in !== undefined)
+			return next();
+		else
+			return res.redirect(config.prefix+'/login');
+	}
 };
 
 //
 // the login page
 //
 const app_login = (req, res) => {
+	if (_.has(config, 'users')) {
+		// we have some users configured -> login required
 		if (!req.query.user && !req.query.password) {
 			console.log("displaying login page");
 			res.contentType("html");
@@ -53,6 +59,12 @@ const app_login = (req, res) => {
 			console.warn("login failed");
 			res.send('Login failed');
 		}
+	} else {
+		// no users -> no login required
+		req.session.user = 'none';
+		req.session.logged_in = true;
+		res.redirect(config.prefix+'/');
+	}
 }
 
 //
