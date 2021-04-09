@@ -156,7 +156,7 @@ exports.handler = (db) => { return (req, res) => {
 		if (formcontent.version != version)
 			throw `versions must be sorted in correct order in json! got mismatch for version ${version} and formcontent.version ${formcontent.version}!`
 
-			// check if the used version is a draft version
+		// check if the used version is a draft version
 		isDraft = !formcontent.final
 		hasPDF = _.has(formcontent, "pdf")
 		if (hasPDF)
