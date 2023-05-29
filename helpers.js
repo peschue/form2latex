@@ -3,7 +3,7 @@
  *
  * MIT License
  *
- * Copyright (c) 2019 Peter Schüller
+ * Copyright (c) 2019-2023 Peter Schüller
  */
 const _ = require("underscore")
 const child_process = require('child_process')

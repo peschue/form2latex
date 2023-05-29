@@ -7,11 +7,22 @@ const forms = {
       {
         name: 'TESTTITLE',
         type: 'TEXT',
-        repat: 'no',
+        repeat: 'no',
         rows: 1,
-        cols: 40,
-        defaultvalue: 'Test Title',
-        htmlcomment: 'This is an explanation for the <i>very important</i> field!'
+        cols: 80,
+        defaultvalue: 'Test Title where no special text can be entered',
+        htmlcomment: 'This is an explanation for the <i>very important</i> field!',
+        validate: true,
+        validate_message: 'Please use only Characters that are safe for LaTeX: a-zA-Z0-9!"#\'()+,./:;<=>?|-'
+      },
+      {
+        name: 'TESTTEXT',
+        type: 'TEXT',
+        repeat: 'no',
+        rows: 4,
+        cols: 80,
+        defaultvalue: 'Test Text where you can also enter \\LaTeX commands',
+        htmlcomment: 'Field without validation is useful for people who know what they are doing',
       },
       {
         name: 'TESTTABLEROW',
@@ -19,6 +30,9 @@ const forms = {
         repeat: 'yes',
         cols: 40,
         defaultvalue: [ 'foo & bar', 'bar & baz' ],
+        validate: true,
+        validate_ampersands: 1,
+        validate_message: 'Please use only Characters that are safe for LaTeX: a-zA-Z0-9!"#\'()+,./:;<=>?|- and make sure to include a single ampersand (&).'
       },
       {
         name: 'TESTIMAGE',

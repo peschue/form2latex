@@ -4,7 +4,7 @@ Tool for filling in forms and render their contents using LaTeX.
 
 * Author: Peter Schüller
 * License: MIT License
-* Copyright (C) 2019 Peter Schüller <contact@peterschueller.com>
+* Copyright (C) 2019-2023 Peter Schüller <contact@peterschueller.com>
 
 # Form Content
 
@@ -54,3 +54,10 @@ for form content:
   <% /<BLOCKNAME> %>
   ```
 
+# Validation
+
+Each block can have the "validate" property set to true, in that case only LaTeX characters that are safe to include, plus ampersands, are permitted.
+
+If the property "validate_ampersands" is set to an integer value, only the specified number of ampersands is permitted in the field.
+
+The message shown in case of violation can be specified in property "validate_message".

@@ -3,7 +3,7 @@
  *
  * MIT License
  *
- * Copyright (c) 2019 Peter Schüller
+ * Copyright (c) 2019-2023 Peter Schüller
  */
 const _ = require("underscore")
 const fs = require("fs");
@@ -17,14 +17,37 @@ const preloaded = {
 	form: fs.readFileSync("templates/form.mustache", "utf8"),
 }
 
+// text input
+const render_text_input = (block) => {
+	const extra_class = block.validate === true ? ' validate' : '';
+	return `
+	<div class="onevaluecontainer">
+	<textarea
+		class="disable_for_readonly${extra_class}" name="${block.name}"
+		rows="${block.rows}" cols="${block.cols}"
+		validate_ampersands="${block.validate_ampersands}">
+	${block.value}
+	</textarea><p class="warning_message hidden">${block.validate_message}</p>
+	</div>
+	`;
+};
+
 // tablerow
-const render_tablerow_general = (block, trclass, value) => `
+const render_tablerow_general = (block, trclass, value) => {
+	const extra_class = block.validate === true ? ' validate' : '';
+	return `
 	<tr class="${trclass} onevaluecontainer">
-		<td><textarea class="disable_for_readonly" name="${block.name}" rows="1" cols="${block.cols}">${value}</textarea></td>
+		<td><textarea
+			class="disable_for_readonly${extra_class}" name="${block.name}"
+			rows="1" cols="${block.cols}"
+			validate_ampersands="${block.validate_ampersands}">${value}</textarea></td>
 		<td><input class="disable_for_readonly delete" type="button" value="-" /></td>
 		<td><input class="more disable_for_readonly" fieldname="${block.name}" type="button" value="+" /></td>
+		<td><p class="warning_message hidden">${block.validate_message}</p></td>
 	</tr>
-`;
+	`;
+};
+
 const render_template_tablerow = (block) => `
 	<table class="template" id="template-${block.name}">
 		${render_tablerow_general(block, 'tocopy onevaluecontainer', '')}
@@ -87,7 +110,7 @@ const augment_block = (formcontent) => { return (block) => {
 	switch (block.type) {
 		case 'TEXT':
 			block.template = '';
-			block.control = `<textarea class="disable_for_readonly" name="${block.name}" rows="${block.rows}" cols="${block.cols}">\n${block.value}\n</textarea>`;
+			block.control = render_text_input(block);
 			break;
 		case 'TABLEROW':
 			if (block.repeat == 'yes') {
