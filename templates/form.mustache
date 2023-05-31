@@ -27,6 +27,36 @@ Copyright (c) 2019-2023 Peter Schüller
   <script>
     {{{commonjs}}}
 
+    function validation_event(e) {
+      const value = $(this).val();
+      const pattern = /^[a-zA-Z0-9!"#\'()+,./:;<=>?|\s-&]*$/;
+      // if validate_ampersand is not specified, anything is allowed
+      var ampersands_bad = false;
+      const validate_amp = $(this).attr('validate_ampersands');
+      const validate_amp_int = parseInt(validate_amp, 10);
+      if (!isNaN(validate_amp_int)) {
+        // count ampersands and warn if not equal to given number
+        const match = value.match(/&/g);
+        if (validate_amp_int == 0) {
+          if (match) {
+            ampersands_bad = true; // bad, we should not have ampersands but we have
+          }
+        } else {
+          if (match && match.length != validate_amp_int) {
+            ampersands_bad = true; // bad, we have a match and the number of matches is not the desired one
+          };
+          if (!match) {
+            ampersands_bad = true; // bad, we have no match but should have one > 0
+          };
+        }
+      };
+      if (!pattern.test(value) || ampersands_bad) {
+        $(this).closest('.onevaluecontainer').find('p.warning_message').show();
+      } else {
+        $(this).closest('.onevaluecontainer').find('p.warning_message').hide();
+      }
+    }
+
     function install() {
 
       if ({{isDraft}}) {
@@ -42,33 +72,10 @@ Copyright (c) 2019-2023 Peter Schüller
           $(this).closest('.onevaluecontainer').remove();
         });
 
-        $(".validate").bind('input', function(e) {
-          const value = $(this).val();
-          const pattern = /^[a-zA-Z0-9!"#\'()+,./:;<=>?|\s-&]*$/;
-          // if validate_ampersand is not specified, anything is allowed
-          var ampersands_bad = false;
-          const validate_amp = $(this).attr('validate_ampersands');
-          const validate_amp_int = parseInt(validate_amp, 10);
-          if (!isNaN(validate_amp_int)) {
-            // count ampersands and warn if not equal to given number
-            const match = value.match(/&/g);
-            if (validate_amp_int == 0 && match) {
-              ampersands_bad = true; // bad, we should not have ampersands but we have
-            } else {
-              if (match && match.length != validate_amp_int) {
-                ampersands_bad = true; // bad, we have a match and the number of matches is not the desired one
-              };
-              if (!match) {
-                ampersands_bad = true; // bad, we have no match but should have one > 0
-              };
-            }
-          };
-          if (!pattern.test(value) || ampersands_bad) {
-            $(this).closest('.onevaluecontainer').find('p.warning_message').show();
-          } else {
-            $(this).closest('.onevaluecontainer').find('p.warning_message').hide();
-          }
-        });
+        // validate for each input change
+        $(".validate").bind('input', validation_event);
+        // validate once at load of the editor, not only when editing the first time
+        $(".validate").trigger('input');
 
       } else {
         $(".disable_for_readonly").attr('disabled', 'disabled');
