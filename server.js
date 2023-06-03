@@ -117,6 +117,8 @@ app.use(session({
 	saveUninitialized: true
 }));
 
+console.log("prefix: ", config.prefix);
+
 const lowdb_adapter = new FileAsync(config.lowdb_location);
 low(lowdb_adapter)
 	.then(db => {
