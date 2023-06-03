@@ -19,7 +19,7 @@ Copyright (c) 2019-2023 Peter Schüller
       display: none;
     }
 
-    .warning_message {
+    .warning_message, .warning_message_ampersands {
       color: red;
     }
   </style>
@@ -29,7 +29,14 @@ Copyright (c) 2019-2023 Peter Schüller
 
     function validation_event(e) {
       const value = $(this).val();
+
       const pattern = /^[a-zA-Z0-9!"#\'()+,./:;<=>?|\s-&]*$/;
+      if (!pattern.test(value)) {
+        $(this).closest('.onevaluecontainer').find('.warning_message').show();
+      } else {
+        $(this).closest('.onevaluecontainer').find('.warning_message').hide();
+      }
+
       // if validate_ampersand is not specified, anything is allowed
       var ampersands_bad = false;
       const validate_amp = $(this).attr('validate_ampersands');
@@ -50,10 +57,10 @@ Copyright (c) 2019-2023 Peter Schüller
           };
         }
       };
-      if (!pattern.test(value) || ampersands_bad) {
-        $(this).closest('.onevaluecontainer').find('p.warning_message').show();
+      if (ampersands_bad) {
+        $(this).closest('.onevaluecontainer').find('.warning_message_ampersands').show();
       } else {
-        $(this).closest('.onevaluecontainer').find('p.warning_message').hide();
+        $(this).closest('.onevaluecontainer').find('.warning_message_ampersands').hide();
       }
     }
 

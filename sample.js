@@ -3,6 +3,8 @@ const forms = {
     tex_template: 'templates/sample.mustache.tex',
     tex_targetbase: 'type1',
     htmlcomment: 'comment to form type',
+    validate_message_characters: 'Please use only Characters that are safe for LaTeX: a-zA-Z0-9!"#\'()+,./:;<=>?|-.',
+    validate_message_ampersands_template: 'Please make sure that you have exactly %d ampersand (&) characters in the input.',
     form_blocks: [
       {
         name: 'TESTTITLE',
@@ -12,8 +14,7 @@ const forms = {
         cols: 80,
         defaultvalue: 'Test Title where no special text can be entered',
         htmlcomment: 'This is an explanation for the <i>very important</i> field!',
-        validate: true,
-        validate_message: 'Please use only Characters that are safe for LaTeX: a-zA-Z0-9!"#\'()+,./:;<=>?|-'
+        validate: true
       },
       {
         name: 'TESTTEXT',
@@ -31,8 +32,7 @@ const forms = {
         cols: 40,
         defaultvalue: [ 'foo & bar', 'bar & baz' ],
         validate: true,
-        validate_ampersands: 1,
-        validate_message: 'Please use only Characters that are safe for LaTeX: a-zA-Z0-9!"#\'()+,./:;<=>?|- and make sure to include a single ampersand (&).'
+        validate_ampersands: 1
       },
       {
         name: 'TESTIMAGE',

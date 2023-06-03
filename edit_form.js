@@ -18,8 +18,10 @@ const preloaded = {
 }
 
 // text input
-const render_text_input = (block) => {
+const render_text_input = (block, formspec) => {
 	const extra_class = block.validate === true ? ' validate' : '';
+    // format warning message for ampersand count
+    wma = formspec.validate_message_ampersands_template.replace('%d', `${block.validate_ampersands}`)
 	return `
 	<div class="onevaluecontainer">
 	<textarea
@@ -27,14 +29,20 @@ const render_text_input = (block) => {
 		rows="${block.rows}" cols="${block.cols}"
 		validate_ampersands="${block.validate_ampersands}">
 	${block.value}
-	</textarea><p class="warning_message hidden">${block.validate_message}</p>
+	</textarea>
+    <p>
+        <span class="warning_message hidden">${formspec.validate_message_characters}</span>
+        <span class="warning_message_ampersands hidden">${wma}</span>
+    </p>
 	</div>
 	`;
 };
 
 // tablerow
-const render_tablerow_general = (block, trclass, value) => {
+const render_tablerow_general = (block, formspec, trclass, value) => {
 	const extra_class = block.validate === true ? ' validate' : '';
+    // format warning message for ampersand count
+    wma = formspec.validate_message_ampersands_template.replace('%d', `${block.validate_ampersands}`)
 	return `
 	<tr class="${trclass} onevaluecontainer">
 		<td><textarea
@@ -43,17 +51,23 @@ const render_tablerow_general = (block, trclass, value) => {
 			validate_ampersands="${block.validate_ampersands}">${value}</textarea></td>
 		<td><input class="disable_for_readonly delete" type="button" value="-" /></td>
 		<td><input class="more disable_for_readonly" fieldname="${block.name}" type="button" value="+" /></td>
-		<td><p class="warning_message hidden">${block.validate_message}</p></td>
+		<td>
+            <p>
+                <span class="warning_message hidden">${formspec.validate_message_characters}</span>
+                <span class="warning_message_ampersands hidden">${wma}</span>
+            </p>
+        </td>
 	</tr>
 	`;
 };
 
-const render_template_tablerow = (block) => `
+const render_template_tablerow = (block, formspec) => `
 	<table class="template" id="template-${block.name}">
-		${render_tablerow_general(block, 'tocopy onevaluecontainer', '')}
+		${render_tablerow_general(block, formspec, 'tocopy onevaluecontainer', '')}
 	</table>
 `;
-const render_existing_tablerow = (block, value) => render_tablerow_general(block, 'onevaluecontainer', value);
+const render_existing_tablerow = (block, formspec, value) => 
+    render_tablerow_general(block, formspec, 'onevaluecontainer', value);
 
 // image
 const render_add_image = (block) => `
@@ -92,7 +106,7 @@ const render_template_image = (block) => `
 	</table>
 	`;
 
-const augment_block = (formcontent) => { return (block) => {
+const augment_block = (formcontent, formspec) => { return (block) => {
 	// deep copy
 	let ret = JSON.parse(JSON.stringify(block));
 
@@ -110,11 +124,11 @@ const augment_block = (formcontent) => { return (block) => {
 	switch (block.type) {
 		case 'TEXT':
 			block.template = '';
-			block.control = render_text_input(block);
+			block.control = render_text_input(block, formspec);
 			break;
 		case 'TABLEROW':
 			if (block.repeat == 'yes') {
-				block.template = render_template_tablerow(block);
+				block.template = render_template_tablerow(block, formspec);
 				let values = block.value;
 				if (values == undefined)
 					values = [];
@@ -123,7 +137,7 @@ const augment_block = (formcontent) => { return (block) => {
 					values.push('');
 				block.control =
 					'<table border="0">' +
-					values.map((val) => render_existing_tablerow(block, val)).join('\n') +
+					values.map((val) => render_existing_tablerow(block, formspec, val)).join('\n') +
 					'</table>';
 			} else {
 				block.template = '';
@@ -196,7 +210,7 @@ exports.handler = (db) => { return (req, res) => {
 			isDraft: isDraft,
 			hasPDF: hasPDF,
 			pdflink: pdflink,
-			blocks: formspec.form_blocks.map(augment_block(formcontent))
+			blocks: formspec.form_blocks.map(augment_block(formcontent, formspec))
 		});
 		res.contentType("html");
 		res.status(200);
