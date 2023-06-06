@@ -30,7 +30,7 @@ Copyright (c) 2019-2023 Peter Schüller
     function validation_event(e) {
       const value = $(this).val();
 
-      const pattern = /^[a-zA-Z0-9!"#\'()+,./:;<=>?|\s-&]*$/;
+      const pattern = /^[a-zA-Z0-9!"\'()+,./:;<=>?|\s-&]*$/;
       if (!pattern.test(value)) {
         $(this).closest('.onevaluecontainer').find('.warning_message').show();
       } else {

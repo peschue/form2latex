@@ -3,7 +3,7 @@ const forms = {
     tex_template: 'templates/sample.mustache.tex',
     tex_targetbase: 'type1',
     htmlcomment: 'comment to form type',
-    validate_message_characters: 'Please use only Characters that are safe for LaTeX: a-zA-Z0-9!"#\'()+,./:;<=>?|-.',
+    validate_message_characters: 'Please use only Characters that are safe for LaTeX: a-zA-Z0-9!"\'()+,./:;<=>?|-.',
     validate_message_ampersands_template: 'Please make sure that you have exactly %d ampersand (&) characters in the input.',
     form_blocks: [
       {
