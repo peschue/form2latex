@@ -40,14 +40,15 @@ exports.common_substitutions = {
 
 // replace \r\n by \n
 // replace multiple \n by single \n
+// strip leading/trailing newlines
 exports.normalize_newlines = (obj) => {
 	const ret = _.object(
 		_.pairs(obj)
 		.map((kv) => {
 			if (_.isArray(kv[1]))
-				return [kv[0], kv[1].map((v) => v.replace(/(\r\n)+/g, '\n'))]
+				return [kv[0], kv[1].map((v) => v.replace(/(\r\n)+/g, '\n').trim())]
 			else
-				return [kv[0], kv[1].replace(/(\r\n)+/g, '\n')]
+				return [kv[0], kv[1].replace(/(\r\n)+/g, '\n').trim()]
 		})
 	)
 	//console.debug('after normalizing newlines:', obj)
