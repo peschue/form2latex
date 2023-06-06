@@ -118,6 +118,10 @@ app.use(session({
 }));
 
 console.log("prefix: ", config.prefix);
+console.log("temp_dir_location: ", config.temp_dir_location);
+console.log("upload_directory: ", config.upload_directory);
+console.log("built_pdf_location: ", config.built_pdf_location);
+console.log("lowdb_location: ", config.lowdb_location);
 
 const lowdb_adapter = new FileAsync(config.lowdb_location);
 low(lowdb_adapter)
